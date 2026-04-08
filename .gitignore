@@ -18,5 +18,5 @@ db.sqlite3
 .vercel/
 
 # Archivos estáticos y multimedia
-/static/
+/staticfiles/
 /media/
