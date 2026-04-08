@@ -1,0 +1,22 @@
+# Entornos virtuales
+venv/
+env/
+ENV/
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Variables de entorno (¡Crítico para que no se filtren tus claves de Supabase!)
+.env
+
+# Archivos de la base de datos local
+db.sqlite3
+
+# Archivos de Vercel
+.vercel/
+
+# Archivos estáticos y multimedia
+/static/
+/media/
