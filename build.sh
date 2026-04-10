@@ -1,9 +1,9 @@
 #!/bin/bash
 echo "Instalando dependencias..."
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 echo "Recolectando archivos estáticos..."
-python manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput
 
 echo "Aplicando migraciones..."
-python manage.py migrate
+python3 manage.py migrate
