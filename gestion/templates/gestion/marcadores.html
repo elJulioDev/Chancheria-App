@@ -96,8 +96,15 @@
                         <img class="bm-thumb" src="{{ m.icono }}" alt="{{ m.titulo }}" loading="lazy">
                         <div class="bm-video-footer">
                             <span class="bm-title">{{ m.titulo }}</span>
-                            <button class="bm-delete" data-del-bm="{{ m.id }}"
-                                    onclick="event.preventDefault();event.stopPropagation()">
+                            <button class="bm-edit"
+                                    data-edit-bm="{{ m.id }}"
+                                    data-titulo="{{ m.titulo }}"
+                                    data-url="{{ m.url }}"
+                                    data-carpeta="{{ c.id }}"
+                                    title="Editar">
+                                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354z"/></svg>
+                            </button>
+                            <button class="bm-delete" data-del-bm="{{ m.id }}" title="Eliminar">
                                 <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/></svg>
                             </button>
                         </div>
@@ -109,8 +116,15 @@
                        class="bm-card" data-id="{{ m.id }}" data-folder="{{ c.id }}">
                         <img class="bm-favicon" src="{{ m.icono }}" alt="" loading="lazy">
                         <span class="bm-title">{{ m.titulo }}</span>
-                        <button class="bm-delete" data-del-bm="{{ m.id }}"
-                                onclick="event.preventDefault();event.stopPropagation()">
+                        <button class="bm-edit"
+                                data-edit-bm="{{ m.id }}"
+                                data-titulo="{{ m.titulo }}"
+                                data-url="{{ m.url }}"
+                                data-carpeta="{{ c.id }}"
+                                title="Editar">
+                            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354z"/></svg>
+                        </button>
+                        <button class="bm-delete" data-del-bm="{{ m.id }}" title="Eliminar">
                             <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/></svg>
                         </button>
                     </a>
@@ -138,7 +152,7 @@
     </main>
 </div>
 
-<!-- ── Modal ──────────────────────────────────────────────── -->
+<!-- ── Modal Añadir ───────────────────────────────────────── -->
 <div class="modal-backdrop" id="modal-backdrop">
     <div class="modal">
         <div class="modal-header">
@@ -182,6 +196,39 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" id="modal-cancel" type="button">Cancelar</button>
             <button class="btn btn-primary" id="modal-save" type="button">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modal Editar ───────────────────────────────────────── -->
+<div class="modal-backdrop" id="edit-backdrop">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <span class="modal-title">Editar marcador</span>
+            <button class="modal-close" id="edit-close" type="button">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-id">
+            <div class="field-group">
+                <label class="label" for="edit-titulo">Título</label>
+                <input class="input" type="text" id="edit-titulo" autocomplete="off">
+            </div>
+            <div class="field-group">
+                <label class="label" for="edit-url">URL</label>
+                <input class="input" type="url" id="edit-url" autocomplete="off">
+            </div>
+            <div class="field-group">
+                <label class="label" for="edit-carpeta">Carpeta</label>
+                <select class="select" id="edit-carpeta">
+                    {% for c in carpetas %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="edit-cancel" type="button">Cancelar</button>
+            <button class="btn btn-primary" id="edit-save" type="button">Guardar cambios</button>
         </div>
     </div>
 </div>

@@ -47,6 +47,27 @@ def crear_marcador(request):
 
 @login_required(login_url='gestion:login')
 @require_POST
+def editar_marcador(request, pk):
+    m = get_object_or_404(Marcador, pk=pk, usuario=request.user)
+    titulo = (request.POST.get('titulo') or '').strip()
+    url    = (request.POST.get('url') or '').strip()
+    carpeta_id = request.POST.get('carpeta')
+    if not (titulo and url and carpeta_id):
+        return JsonResponse({'ok': False, 'error': 'Datos incompletos'}, status=400)
+    carpeta = get_object_or_404(Carpeta, id=carpeta_id, usuario=request.user)
+    m.titulo  = titulo
+    m.url     = url
+    m.carpeta = carpeta
+    # Re-resolver icono si cambió la URL
+    url_anterior = Marcador.objects.filter(pk=pk).values_list('url', flat=True).first()
+    if url != url_anterior:
+        m.icono = ''          # fuerza re-resolución en save()
+    m.save()
+    return JsonResponse({'ok': True, 'titulo': m.titulo, 'carpeta_id': carpeta.id, 'icono': m.icono})
+
+
+@login_required(login_url='gestion:login')
+@require_POST
 def eliminar_carpeta(request, pk):
     c = get_object_or_404(Carpeta, pk=pk, usuario=request.user)
     c.delete()

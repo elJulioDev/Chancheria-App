@@ -336,6 +336,29 @@ body {
     font-size: 13px;
 }
 
+/* ── Botón editar ─────────────────────────────────────────── */
+.bm-edit {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: var(--blue-subtle);
+    border: 1px solid var(--blue-border);
+    border-radius: var(--r-xs);
+    color: var(--blue);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background var(--t-fast), color var(--t-fast);
+    font-size: 0;
+    line-height: 1;
+}
+
+.bm-card:hover .bm-edit { display: flex; }
+.bm-edit:hover { background: var(--blue-emphasis); color: #fff; border-color: var(--blue-emphasis); }
+
+/* ── Botón eliminar ───────────────────────────────────────── */
 .bm-delete {
     display: none;
     align-items: center;

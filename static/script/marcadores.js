@@ -28,7 +28,7 @@ async function post(url, data) {
     return r.json();
 }
 
-/* ── Modal ───────────────────────────────────────────────── */
+/* ── Modal Añadir ────────────────────────────────────────── */
 const backdrop = $('#modal-backdrop');
 
 function openModal() { backdrop.classList.add('is-open'); }
@@ -44,7 +44,7 @@ $('#modal-close').addEventListener('click', closeModal);
 $('#modal-cancel').addEventListener('click', closeModal);
 backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
-/* ── Tabs del modal ──────────────────────────────────────── */
+/* ── Tabs del modal Añadir ───────────────────────────────── */
 $$('[data-tab]').forEach(tab => {
     tab.addEventListener('click', () => {
         $$('[data-tab]').forEach(t => t.classList.remove('is-active'));
@@ -56,7 +56,7 @@ $$('[data-tab]').forEach(tab => {
     });
 });
 
-/* ── Guardar ─────────────────────────────────────────────── */
+/* ── Guardar (Añadir) ────────────────────────────────────── */
 $('#modal-save').addEventListener('click', async () => {
     const isFolder = $('#tab-folder').classList.contains('is-active');
 
@@ -77,23 +77,70 @@ $('#modal-save').addEventListener('click', async () => {
     }
 });
 
-/* ── Eliminar (delegado) ─────────────────────────────────── */
-document.addEventListener('click', async e => {
-    const delBm     = e.target.closest('[data-del-bm]');
-    const delFolder = e.target.closest('[data-del-folder]');
+/* ── Modal Editar ────────────────────────────────────────── */
+const editBackdrop = $('#edit-backdrop');
 
+function openEditModal(btn) {
+    $('#edit-id').value       = btn.dataset.editBm;
+    $('#edit-titulo').value   = btn.dataset.titulo;
+    $('#edit-url').value      = btn.dataset.url;
+    $('#edit-carpeta').value  = btn.dataset.carpeta;
+    editBackdrop.classList.add('is-open');
+    setTimeout(() => $('#edit-titulo').focus(), 80);
+}
+
+function closeEditModal() {
+    editBackdrop.classList.remove('is-open');
+}
+
+$('#edit-close').addEventListener('click', closeEditModal);
+$('#edit-cancel').addEventListener('click', closeEditModal);
+editBackdrop.addEventListener('click', e => { if (e.target === editBackdrop) closeEditModal(); });
+
+$('#edit-save').addEventListener('click', async () => {
+    const id      = $('#edit-id').value;
+    const titulo  = $('#edit-titulo').value.trim();
+    const url     = $('#edit-url').value.trim();
+    const carpeta = $('#edit-carpeta').value;
+    if (!titulo || !url || !carpeta) return toast('Datos incompletos', 'error');
+    const r = await post(`/marcadores/${id}/editar/`, { titulo, url, carpeta });
+    if (r.ok) { toast('Marcador actualizado'); location.reload(); }
+    else toast(r.error || 'Error al guardar', 'error');
+});
+
+/* ── Delegado: editar + eliminar ─────────────────────────── */
+document.addEventListener('click', async e => {
+    /* ── Editar ── */
+    const editBtn = e.target.closest('[data-edit-bm]');
+    if (editBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        openEditModal(editBtn);
+        return;
+    }
+
+    /* ── Eliminar marcador ── */
+    const delBm = e.target.closest('[data-del-bm]');
     if (delBm) {
+        e.preventDefault();
+        e.stopPropagation();
         if (!confirm('¿Eliminar este marcador?')) return;
         const r = await post(`/marcadores/${delBm.dataset.delBm}/eliminar/`, {});
         if (r.ok) { toast('Marcador eliminado'); location.reload(); }
         else toast('Error al eliminar', 'error');
+        return;
     }
 
+    /* ── Eliminar carpeta ── */
+    const delFolder = e.target.closest('[data-del-folder]');
     if (delFolder) {
+        e.preventDefault();
+        e.stopPropagation();
         if (!confirm('¿Eliminar esta carpeta y todos sus marcadores?')) return;
         const r = await post(`/marcadores/carpeta/${delFolder.dataset.delFolder}/eliminar/`, {});
         if (r.ok) { toast('Carpeta eliminada'); location.reload(); }
         else toast('Error al eliminar', 'error');
+        return;
     }
 });
 
@@ -124,7 +171,6 @@ $('#search-input').addEventListener('input', e => {
 
     $('#no-results').style.display = (q && !any) ? 'flex' : 'none';
 
-    // Ocultar secciones vacías al buscar
     $$('.bm-section').forEach(s => {
         const visible = [...s.querySelectorAll('.bm-card')].some(c => !c.classList.contains('is-hidden'));
         s.classList.toggle('is-hidden', q && !visible);
@@ -136,5 +182,9 @@ document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         $('#search-input').focus();
+    }
+    if (e.key === 'Escape') {
+        closeModal();
+        closeEditModal();
     }
 });
