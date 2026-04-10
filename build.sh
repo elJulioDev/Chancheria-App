@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Instalando dependencias..."
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt --break-system-packages
 
 echo "Recolectando archivos estáticos..."
 python3 manage.py collectstatic --noinput
