@@ -31,6 +31,20 @@ def crear_carpeta(request):
 
 @login_required(login_url='gestion:login')
 @require_POST
+def editar_carpeta(request, pk):
+    c = get_object_or_404(Carpeta, pk=pk, usuario=request.user)
+    nombre = (request.POST.get('nombre') or '').strip()
+    if not nombre:
+        return JsonResponse({'ok': False, 'error': 'Nombre requerido'}, status=400)
+    if Carpeta.objects.filter(usuario=request.user, nombre__iexact=nombre).exclude(pk=pk).exists():
+        return JsonResponse({'ok': False, 'error': 'Ya existe una carpeta con ese nombre'}, status=400)
+    c.nombre = nombre
+    c.save()
+    return JsonResponse({'ok': True, 'id': c.id, 'nombre': c.nombre})
+
+
+@login_required(login_url='gestion:login')
+@require_POST
 def crear_marcador(request):
     titulo = (request.POST.get('titulo') or '').strip()
     url = (request.POST.get('url') or '').strip()
@@ -46,18 +60,16 @@ def crear_marcador(request):
 
 
 @login_required(login_url='gestion:login')
-@require_http_methods(["POST", "PUT"]) # Soportar PUT para peticiones REST
+@require_http_methods(["POST", "PUT"])
 def editar_marcador(request, pk):
     m = get_object_or_404(Marcador, pk=pk, usuario=request.user)
-    
-    # Manejar el payload dependiendo de si el frontend manda JSON o FormData
+
     if request.content_type == 'application/json':
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
             data = {}
     else:
-        # Django solo rellena request.POST en peticiones POST
         data = request.POST if request.method == 'POST' else QueryDict(request.body)
 
     titulo = (data.get('titulo') or '').strip()
@@ -66,27 +78,26 @@ def editar_marcador(request, pk):
 
     if not (titulo and url and carpeta_id):
         return JsonResponse({'ok': False, 'error': 'Datos incompletos'}, status=400)
-        
+
     carpeta = get_object_or_404(Carpeta, id=carpeta_id, usuario=request.user)
-    
-    m.titulo  = titulo
-    m.url     = url
-    m.carpeta = carpeta
-    
+
     # Re-resolver icono si cambió la URL
     url_anterior = Marcador.objects.filter(pk=pk).values_list('url', flat=True).first()
     if url != url_anterior:
-        m.icono = ''  # fuerza re-resolución en save()
-        
+        m.icono = ''
+
+    m.titulo  = titulo
+    m.url     = url
+    m.carpeta = carpeta
     m.save()
-    
+
     return JsonResponse({
-        'ok': True, 
+        'ok': True,
         'id': m.id,
-        'titulo': m.titulo, 
+        'titulo': m.titulo,
         'url': m.url,
-        'carpeta_id': carpeta.id, 
-        'icono': m.icono
+        'carpeta_id': carpeta.id,
+        'icono': m.icono,
     })
 
 
@@ -96,6 +107,7 @@ def eliminar_marcador(request, pk):
     m = get_object_or_404(Marcador, pk=pk, usuario=request.user)
     m.delete()
     return JsonResponse({'ok': True})
+
 
 @login_required(login_url='gestion:login')
 @require_POST

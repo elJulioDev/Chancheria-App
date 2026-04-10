@@ -10,6 +10,7 @@ urlpatterns = [
 
     path('marcadores/', views.marcadores_view, name='marcadores'),
     path('marcadores/carpeta/crear/', views.crear_carpeta, name='crear_carpeta'),
+    path('marcadores/carpeta/<int:pk>/editar/', views.editar_carpeta, name='editar_carpeta'),
     path('marcadores/carpeta/<int:pk>/eliminar/', views.eliminar_carpeta, name='eliminar_carpeta'),
     path('marcadores/crear/', views.crear_marcador, name='crear_marcador'),
     path('marcadores/<int:pk>/eliminar/', views.eliminar_marcador, name='eliminar_marcador'),

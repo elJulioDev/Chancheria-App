@@ -223,8 +223,19 @@ body {
 
 .sidebar-item:hover .sidebar-item-action { display: flex; }
 .sidebar-item-action:hover {
+    background: var(--blue-subtle);
+    color: var(--blue);
+}
+
+/* Color hover exclusivo para eliminar (Rojo) */
+.sidebar-item-action.sidebar-item-action-danger:hover {
     background: var(--red-subtle);
     color: var(--red);
+}
+
+/* Oculta la burbuja del contador al pasar el mouse sobre la carpeta */
+.sidebar-item:hover .count-bubble {
+    display: none;
 }
 
 .sidebar-empty {
@@ -590,6 +601,48 @@ body.select-mode .bm-card:not(.is-selected):hover {
 
 .toast.is-success { border-color: var(--green-border); color: var(--green); background: var(--surface-3); }
 .toast.is-error   { border-color: var(--red-border);   color: var(--red);   background: var(--surface-3); }
+
+/* ── Sidebar: dos botones de acción por carpeta ──────────── */
+.sidebar-item-action-danger:hover {
+    background: var(--red-subtle);
+    color: var(--red);
+}
+
+/* ── Modal de confirmación ───────────────────────────────── */
+.modal-confirm-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-full);
+    margin: 0 auto 14px;
+}
+
+.modal-confirm-icon--danger {
+    background: var(--red-subtle);
+    border: 1px solid var(--red-border);
+    color: var(--red);
+}
+
+.modal-confirm-text {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.modal-confirm-sub {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-subtle);
+}
+
+@media (hover: none) {
+    .sidebar-item-action {
+        display: flex;
+    }
+}
 
 @keyframes toast-in {
     from { opacity: 0; transform: translateX(12px); }

@@ -28,12 +28,23 @@ async function post(url, data) {
     return r.json();
 }
 
-/* ── Modal Añadir ────────────────────────────────────────── */
-const backdrop = $('#modal-backdrop');
+/* ── Helpers abre/cierra backdrop ───────────────────────── */
+function openBackdrop(id)  { document.getElementById(id).classList.add('is-open'); }
+function closeBackdrop(id) { document.getElementById(id).classList.remove('is-open'); }
 
-function openModal() { backdrop.classList.add('is-open'); }
+function bindClose(backdropId, ...btnIds) {
+    const bd = document.getElementById(backdropId);
+    btnIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', () => closeBackdrop(backdropId));
+    });
+    bd.addEventListener('click', e => { if (e.target === bd) closeBackdrop(backdropId); });
+}
+
+/* ── Modal Añadir ────────────────────────────────────────── */
+function openModal() { openBackdrop('modal-backdrop'); }
 function closeModal() {
-    backdrop.classList.remove('is-open');
+    closeBackdrop('modal-backdrop');
     $('#bm-titulo').value = '';
     $('#bm-url').value = '';
     $('#folder-nombre').value = '';
@@ -42,7 +53,7 @@ function closeModal() {
 $('#add-btn').addEventListener('click', openModal);
 $('#modal-close').addEventListener('click', closeModal);
 $('#modal-cancel').addEventListener('click', closeModal);
-backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+$('#modal-backdrop').addEventListener('click', e => { if (e.target === $('#modal-backdrop')) closeModal(); });
 
 /* ── Tabs del modal Añadir ───────────────────────────────── */
 $$('[data-tab]').forEach(tab => {
@@ -77,25 +88,20 @@ $('#modal-save').addEventListener('click', async () => {
     }
 });
 
-/* ── Modal Editar ────────────────────────────────────────── */
-const editBackdrop = $('#edit-backdrop');
-
+/* ══════════════════════════════════════════════════════════
+   Modal Editar marcador
+   ══════════════════════════════════════════════════════════ */
 function openEditModal(btn) {
-    $('#edit-id').value       = btn.dataset.editBm;
-    $('#edit-titulo').value   = btn.dataset.titulo;
-    $('#edit-url').value      = btn.dataset.url;
-    $('#edit-carpeta').value  = btn.dataset.carpeta;
-    editBackdrop.classList.add('is-open');
+    $('#edit-id').value      = btn.dataset.editBm;
+    $('#edit-titulo').value  = btn.dataset.titulo;
+    $('#edit-url').value     = btn.dataset.url;
+    $('#edit-carpeta').value = btn.dataset.carpeta;
+    openBackdrop('edit-backdrop');
     setTimeout(() => $('#edit-titulo').focus(), 80);
 }
+function closeEditModal() { closeBackdrop('edit-backdrop'); }
 
-function closeEditModal() {
-    editBackdrop.classList.remove('is-open');
-}
-
-$('#edit-close').addEventListener('click', closeEditModal);
-$('#edit-cancel').addEventListener('click', closeEditModal);
-editBackdrop.addEventListener('click', e => { if (e.target === editBackdrop) closeEditModal(); });
+bindClose('edit-backdrop', 'edit-close', 'edit-cancel');
 
 $('#edit-save').addEventListener('click', async () => {
     const id      = $('#edit-id').value;
@@ -108,12 +114,82 @@ $('#edit-save').addEventListener('click', async () => {
     else toast(r.error || 'Error al guardar', 'error');
 });
 
-/* ── Delegado: editar + eliminar (modo normal) ───────────── */
+/* ══════════════════════════════════════════════════════════
+   Modal Confirmar eliminar marcador
+   ══════════════════════════════════════════════════════════ */
+function openDelBmModal(id, titulo) {
+    $('#del-bm-id').value         = id;
+    $('#del-bm-nombre').textContent = titulo;
+    openBackdrop('del-bm-backdrop');
+}
+function closeDelBmModal() { closeBackdrop('del-bm-backdrop'); }
+
+bindClose('del-bm-backdrop', 'del-bm-close', 'del-bm-cancel');
+
+$('#del-bm-confirm').addEventListener('click', async () => {
+    const id = $('#del-bm-id').value;
+    const btn = $('#del-bm-confirm');
+    btn.disabled = true;
+    const r = await post(`/marcadores/${id}/eliminar/`, {});
+    btn.disabled = false;
+    if (r.ok) { toast('Marcador eliminado'); location.reload(); }
+    else { toast('Error al eliminar', 'error'); closeDelBmModal(); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   Modal Editar carpeta
+   ══════════════════════════════════════════════════════════ */
+function openEditFolderModal(id, nombre) {
+    $('#edit-folder-id').value     = id;
+    $('#edit-folder-nombre').value = nombre;
+    openBackdrop('edit-folder-backdrop');
+    setTimeout(() => $('#edit-folder-nombre').focus(), 80);
+}
+function closeEditFolderModal() { closeBackdrop('edit-folder-backdrop'); }
+
+bindClose('edit-folder-backdrop', 'edit-folder-close', 'edit-folder-cancel');
+
+$('#edit-folder-save').addEventListener('click', async () => {
+    const id     = $('#edit-folder-id').value;
+    const nombre = $('#edit-folder-nombre').value.trim();
+    if (!nombre) return toast('Nombre requerido', 'error');
+    const btn = $('#edit-folder-save');
+    btn.disabled = true;
+    const r = await post(`/marcadores/carpeta/${id}/editar/`, { nombre });
+    btn.disabled = false;
+    if (r.ok) { toast('Carpeta renombrada'); location.reload(); }
+    else toast(r.error || 'Error al guardar', 'error');
+});
+
+/* ══════════════════════════════════════════════════════════
+   Modal Confirmar eliminar carpeta
+   ══════════════════════════════════════════════════════════ */
+function openDelFolderModal(id, nombre) {
+    $('#del-folder-id').value          = id;
+    $('#del-folder-nombre').textContent = nombre;
+    openBackdrop('del-folder-backdrop');
+}
+function closeDelFolderModal() { closeBackdrop('del-folder-backdrop'); }
+
+bindClose('del-folder-backdrop', 'del-folder-close', 'del-folder-cancel');
+
+$('#del-folder-confirm').addEventListener('click', async () => {
+    const id  = $('#del-folder-id').value;
+    const btn = $('#del-folder-confirm');
+    btn.disabled = true;
+    const r = await post(`/marcadores/carpeta/${id}/eliminar/`, {});
+    btn.disabled = false;
+    if (r.ok) { toast('Carpeta eliminada'); location.reload(); }
+    else { toast('Error al eliminar', 'error'); closeDelFolderModal(); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   Delegado: editar + eliminar (marcadores y carpetas)
+   ══════════════════════════════════════════════════════════ */
 document.addEventListener('click', async e => {
-    // Ignorar en modo selección
     if (document.body.classList.contains('select-mode')) return;
 
-    /* ── Editar ── */
+    /* ── Editar marcador ── */
     const editBtn = e.target.closest('[data-edit-bm]');
     if (editBtn) {
         e.preventDefault();
@@ -127,10 +203,16 @@ document.addEventListener('click', async e => {
     if (delBm) {
         e.preventDefault();
         e.stopPropagation();
-        if (!confirm('¿Eliminar este marcador?')) return;
-        const r = await post(`/marcadores/${delBm.dataset.delBm}/eliminar/`, {});
-        if (r.ok) { toast('Marcador eliminado'); location.reload(); }
-        else toast('Error al eliminar', 'error');
+        openDelBmModal(delBm.dataset.delBm, delBm.dataset.titulo);
+        return;
+    }
+
+    /* ── Editar carpeta ── */
+    const editFolder = e.target.closest('[data-edit-folder]');
+    if (editFolder) {
+        e.preventDefault();
+        e.stopPropagation();
+        openEditFolderModal(editFolder.dataset.editFolder, editFolder.dataset.nombre);
         return;
     }
 
@@ -139,10 +221,11 @@ document.addEventListener('click', async e => {
     if (delFolder) {
         e.preventDefault();
         e.stopPropagation();
-        if (!confirm('¿Eliminar esta carpeta y todos sus marcadores?')) return;
-        const r = await post(`/marcadores/carpeta/${delFolder.dataset.delFolder}/eliminar/`, {});
-        if (r.ok) { toast('Carpeta eliminada'); location.reload(); }
-        else toast('Error al eliminar', 'error');
+        const sidebarItem = delFolder.closest('.sidebar-item');
+        const nombre = sidebarItem
+            ? sidebarItem.querySelector('.sidebar-item-name').textContent.trim()
+            : 'esta carpeta';
+        openDelFolderModal(delFolder.dataset.delFolder, nombre);
         return;
     }
 });
@@ -190,15 +273,59 @@ const bulkDeleteBtn = $('#bulk-delete-btn');
 const bulkCancelBtn = $('#bulk-cancel-btn');
 const bulkSelectAll = $('#bulk-select-all');
 
+// Agrega estas referencias junto a las otras de "bulk"
+const bulkMoveBtn    = $('#bulk-move-btn');
+const bulkMoveSelect = $('#bulk-move-select');
+
+// Vincula el cierre del modal a los botones correspondientes
+bindClose('bulk-move-backdrop', 'bulk-move-close', 'bulk-move-cancel');
+
+// Al hacer clic en "Mover" en la barra bulk
+bulkMoveBtn.addEventListener('click', () => {
+    const selected = getSelectedCards();
+    if (selected.length === 0) return;
+    
+    $('#bulk-move-count').textContent = selected.length;
+    bulkMoveSelect.value = ''; // Resetea el select para evitar envíos por error
+    openBackdrop('bulk-move-backdrop');
+});
+
+// Confirmar el movimiento
+$('#bulk-move-confirm').addEventListener('click', async () => {
+    const selected = getSelectedCards();
+    const carpetaId = bulkMoveSelect.value;
+
+    if (!carpetaId) return toast('Selecciona una carpeta destino', 'error');
+
+    const btn = $('#bulk-move-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Moviendo…';
+
+    let ok = 0, fail = 0;
+    
+    // Aprovechamos tu endpoint existente para mover iterando la selección
+    for (const card of selected) {
+        try {
+            const r = await post(`/marcadores/${card.dataset.id}/mover/`, { carpeta: carpetaId });
+            r.ok ? ok++ : fail++;
+        } catch { 
+            fail++; 
+        }
+    }
+
+    if (fail === 0) {
+        toast(`${ok} marcador(es) movido(s)`, 'success');
+    } else {
+        toast(`${ok} movidos, ${fail} con error`, 'error');
+    }
+
+    location.reload();
+});
+
 let selectMode = false;
 
-function getSelectedCards() {
-    return [...$$('.bm-card.is-selected')];
-}
-
-function getVisibleCards() {
-    return [...$$('.bm-card:not(.is-hidden)')];
-}
+function getSelectedCards() { return [...$$('.bm-card.is-selected')]; }
+function getVisibleCards()  { return [...$$('.bm-card:not(.is-hidden)')]; }
 
 function updateBulkBar() {
     const selected = getSelectedCards();
@@ -206,11 +333,10 @@ function updateBulkBar() {
     bulkCount.textContent = count === 1 ? '1 seleccionado' : `${count} seleccionados`;
     bulkBar.classList.toggle('is-visible', count > 0);
 
-    // Texto del botón "seleccionar todo"
     const visible = getVisibleCards();
     const allSelected = visible.length > 0 && visible.every(c => c.classList.contains('is-selected'));
-    bulkSelectAll.querySelector('span') && (bulkSelectAll.querySelector('span').textContent = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo');
-    // Para el caso sin span, actualizar el title
+    const span = bulkSelectAll.querySelector('span');
+    if (span) span.textContent = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo';
     bulkSelectAll.title = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo';
 }
 
@@ -226,17 +352,14 @@ function exitSelectMode() {
     document.body.classList.remove('select-mode');
     selectModeBtn.classList.remove('is-active');
     selectModeBtn.title = 'Selección múltiple';
-    // Deseleccionar todo
     $$('.bm-card.is-selected').forEach(c => c.classList.remove('is-selected'));
     bulkBar.classList.remove('is-visible');
 }
 
-// Toggle modo selección
 selectModeBtn.addEventListener('click', () => {
     selectMode ? exitSelectMode() : enterSelectMode();
 });
 
-// Click en card durante modo selección
 document.addEventListener('click', e => {
     if (!selectMode) return;
     const card = e.target.closest('.bm-card');
@@ -247,7 +370,6 @@ document.addEventListener('click', e => {
     updateBulkBar();
 });
 
-// Seleccionar todo / deseleccionar todo
 bulkSelectAll.addEventListener('click', () => {
     const visible = getVisibleCards();
     const allSelected = visible.every(c => c.classList.contains('is-selected'));
@@ -255,10 +377,8 @@ bulkSelectAll.addEventListener('click', () => {
     updateBulkBar();
 });
 
-// Cancelar selección
 bulkCancelBtn.addEventListener('click', exitSelectMode);
 
-// Eliminar selección
 bulkDeleteBtn.addEventListener('click', async () => {
     const selected = getSelectedCards();
     if (selected.length === 0) return;
@@ -269,30 +389,21 @@ bulkDeleteBtn.addEventListener('click', async () => {
     bulkDeleteBtn.disabled = true;
     bulkDeleteBtn.textContent = 'Eliminando…';
 
-    let ok = 0;
-    let fail = 0;
-
+    let ok = 0, fail = 0;
     for (const card of selected) {
-        const id = card.dataset.id;
         try {
-            const r = await post(`/marcadores/${id}/eliminar/`, {});
-            if (r.ok) ok++;
-            else fail++;
-        } catch {
-            fail++;
-        }
+            const r = await post(`/marcadores/${card.dataset.id}/eliminar/`, {});
+            r.ok ? ok++ : fail++;
+        } catch { fail++; }
     }
 
-    if (fail === 0) {
-        toast(`${ok} marcador${ok !== 1 ? 'es' : ''} eliminado${ok !== 1 ? 's' : ''}`, 'success');
-    } else {
-        toast(`${ok} eliminados, ${fail} con error`, 'error');
-    }
+    if (fail === 0) toast(`${ok} marcador${ok !== 1 ? 'es' : ''} eliminado${ok !== 1 ? 's' : ''}`, 'success');
+    else toast(`${ok} eliminados, ${fail} con error`, 'error');
 
     location.reload();
 });
 
-/* ── Atajo de teclado: ⌘K / Ctrl+K / Escape ─────────────── */
+/* ── Atajos de teclado ───────────────────────────────────── */
 document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -304,9 +415,11 @@ document.addEventListener('keydown', e => {
         } else {
             closeModal();
             closeEditModal();
+            closeDelBmModal();
+            closeEditFolderModal();
+            closeDelFolderModal();
         }
     }
-    // Ctrl+A en modo selección = seleccionar todo
     if (selectMode && (e.metaKey || e.ctrlKey) && e.key === 'a') {
         e.preventDefault();
         getVisibleCards().forEach(c => c.classList.add('is-selected'));
