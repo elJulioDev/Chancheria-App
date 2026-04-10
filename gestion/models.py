@@ -33,7 +33,20 @@ class Marcador(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.icono and self.url:
-            from urllib.parse import urlparse
-            dominio = urlparse(self.url).netloc
-            self.icono = f'https://www.google.com/s2/favicons?domain={dominio}&sz=64'
+            self.icono = self._resolver_icono()
         super().save(*args, **kwargs)
+
+    def _resolver_icono(self):
+        from urllib.parse import urlparse
+        dominio = urlparse(self.url).netloc
+
+        # Proveedor externo (archivo local, no incluido en el repositorio)
+        try:
+            from .icono_providers import resolver_icono_externo
+            resultado = resolver_icono_externo(self.url, dominio)
+            if resultado:
+                return resultado
+        except ImportError:
+            pass
+
+        return f'https://www.google.com/s2/favicons?domain={dominio}&sz=64'

@@ -20,3 +20,6 @@ db.sqlite3
 # Archivos estáticos y multimedia
 /staticfiles/
 /media/
+
+# Proveedores de iconos locales (integraciones privadas)
+gestion/icono_providers.py

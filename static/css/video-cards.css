@@ -1,0 +1,69 @@
+/* ════════════════════════════════════════════════════════════
+   video-cards.css — Tarjetas con miniatura
+   Requiere theme.css + marcadores.css
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Grilla con miniaturas: columnas más anchas ───────────── */
+.bm-grid:has(.bm-card.is-video) {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+/* ── Card modo miniatura ─────────────────────────────────── */
+.bm-card.is-video {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Thumbnail 16:9 */
+.bm-card.is-video .bm-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+    background: var(--surface-3);
+    flex-shrink: 0;
+    transition: transform var(--t-slow);
+}
+
+.bm-card.is-video:hover .bm-thumb {
+    transform: scale(1.04);
+}
+
+/* Footer con título y botón eliminar */
+.bm-card.is-video .bm-video-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    min-width: 0;
+}
+
+.bm-card.is-video .bm-title {
+    flex: 1;
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botón eliminar: siempre visible en video cards */
+.bm-card.is-video .bm-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: none;
+    background: rgba(1, 4, 9, 0.72);
+    border-color: transparent;
+    color: var(--text-primary);
+    width: 22px;
+    height: 22px;
+    border-radius: var(--r-sm);
+    backdrop-filter: blur(4px);
+}
+
+.bm-card.is-video:hover .bm-delete { display: flex; }
+.bm-card.is-video .bm-delete:hover { background: var(--red-emphasis); color: #fff; }

@@ -1,216 +1,108 @@
-/**
- * marcadores.js — Gestión / Intranet
- * Requiere: CSRF token en el DOM, clases del template redesignado.
- */
+/* marcadores.js */
+const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 
-'use strict';
-
-// ── Utilidades ──────────────────────────────────────────────
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-const csrf = () => $('[name=csrfmiddlewaretoken]').value;
-
-/** Normaliza una URL: añade https:// si falta protocolo */
-function normalizeUrl(raw) {
-    const s = raw.trim();
-    if (!s) return '';
-    if (/^https?:\/\//i.test(s)) return s;
-    if (s.startsWith('//')) return 'https:' + s;
-    return 'https://' + s;
+/* ── Toast ───────────────────────────────────────────────── */
+function toast(msg, tipo = 'success') {
+    const container = $('#toast-container');
+    const el = document.createElement('div');
+    el.className = `toast is-${tipo}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => {
+        el.style.animation = 'toast-out 0.25s forwards';
+        el.addEventListener('animationend', () => el.remove());
+    }, 2200);
 }
 
-/** POST con FormData, devuelve JSON */
-async function apiPost(url, data = {}) {
+/* ── Fetch helper ────────────────────────────────────────── */
+async function post(url, data) {
     const fd = new FormData();
     Object.entries(data).forEach(([k, v]) => fd.append(k, v));
     const r = await fetch(url, {
         method: 'POST',
-        headers: { 'X-CSRFToken': csrf() },
+        headers: { 'X-CSRFToken': csrf },
         body: fd,
     });
     return r.json();
 }
 
-// ── Toast ───────────────────────────────────────────────────
-function showToast(msg, type = 'success') {
-    const container = $('#toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast is-${type}`;
+/* ── Modal ───────────────────────────────────────────────── */
+const backdrop = $('#modal-backdrop');
 
-    const icon = type === 'success'
-        ? `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>`
-        : `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>`;
-
-    toast.innerHTML = icon + msg;
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.animation = 'toast-out 0.25s ease forwards';
-        setTimeout(() => toast.remove(), 250);
-    }, 2400);
-}
-
-// ── Modals ──────────────────────────────────────────────────
-function openModal(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('is-open');
-    // Focus primer input
-    setTimeout(() => {
-        const first = el.querySelector('input, select');
-        if (first) first.focus();
-    }, 80);
-}
-
-function closeModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('is-open');
-}
-
-// Cerrar con botones [data-close-modal]
-document.addEventListener('click', e => {
-    const btn = e.target.closest('[data-close-modal]');
-    if (btn) closeModal(btn.dataset.closeModal);
-
-    // Cerrar al hacer clic en el backdrop
-    if (e.target.classList.contains('modal-backdrop')) {
-        e.target.classList.remove('is-open');
-    }
-});
-
-// Cerrar con Escape
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        $$('.modal-backdrop.is-open').forEach(m => m.classList.remove('is-open'));
-    }
-    // Atajo ⌘K / Ctrl+K para buscar
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const s = $('#search-input');
-        if (s) { s.focus(); s.select(); }
-    }
-});
-
-// ── Abrir modals ────────────────────────────────────────────
-$('#btn-add-marcador')?.addEventListener('click', () => {
+function openModal() { backdrop.classList.add('is-open'); }
+function closeModal() {
+    backdrop.classList.remove('is-open');
     $('#bm-titulo').value = '';
     $('#bm-url').value = '';
-    openModal('modal-marcador');
-});
-
-$('#btn-add-carpeta')?.addEventListener('click', () => {
     $('#folder-nombre').value = '';
-    openModal('modal-carpeta');
+}
+
+$('#add-btn').addEventListener('click', openModal);
+$('#modal-close').addEventListener('click', closeModal);
+$('#modal-cancel').addEventListener('click', closeModal);
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+/* ── Tabs del modal ──────────────────────────────────────── */
+$$('[data-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+        $$('[data-tab]').forEach(t => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        const isFolder = tab.dataset.tab === 'folder';
+        $('#content-bm').style.display     = isFolder ? 'none' : 'block';
+        $('#content-folder').style.display = isFolder ? 'block' : 'none';
+        $('#modal-title').textContent = isFolder ? 'Nueva carpeta' : 'Nuevo marcador';
+    });
 });
 
-// Botón vacío (primer acceso)
-$('#btn-empty-add')?.addEventListener('click', () => {
-    $('#folder-nombre').value = '';
-    openModal('modal-carpeta');
-});
+/* ── Guardar ─────────────────────────────────────────────── */
+$('#modal-save').addEventListener('click', async () => {
+    const isFolder = $('#tab-folder').classList.contains('is-active');
 
-// ── Guardar marcador ────────────────────────────────────────
-$('#btn-save-marcador')?.addEventListener('click', async () => {
-    const titulo  = $('#bm-titulo').value.trim();
-    const rawUrl  = $('#bm-url').value.trim();
-    const carpeta = $('#bm-carpeta').value;
-
-    if (!titulo) { showToast('El título es requerido', 'error'); return; }
-    if (!rawUrl)  { showToast('La URL es requerida', 'error');   return; }
-    if (!carpeta) { showToast('Selecciona una carpeta', 'error'); return; }
-
-    const url = normalizeUrl(rawUrl);
-
-    const btn = $('#btn-save-marcador');
-    btn.disabled = true;
-
-    try {
-        const r = await apiPost('/marcadores/crear/', { titulo, url, carpeta });
-        if (r.ok) {
-            showToast('Marcador guardado');
-            closeModal('modal-marcador');
-            location.reload();
-        } else {
-            showToast(r.error || 'Error al guardar', 'error');
-        }
-    } catch {
-        showToast('Error de red', 'error');
-    } finally {
-        btn.disabled = false;
+    if (isFolder) {
+        const nombre = $('#folder-nombre').value.trim();
+        if (!nombre) return toast('Nombre requerido', 'error');
+        const r = await post('/marcadores/carpeta/crear/', { nombre });
+        if (r.ok) { toast('Carpeta creada'); location.reload(); }
+        else toast(r.error || 'Error', 'error');
+    } else {
+        const titulo  = $('#bm-titulo').value.trim();
+        const url     = $('#bm-url').value.trim();
+        const carpeta = $('#bm-carpeta').value;
+        if (!titulo || !url || !carpeta) return toast('Datos incompletos', 'error');
+        const r = await post('/marcadores/crear/', { titulo, url, carpeta });
+        if (r.ok) { toast('Marcador guardado'); location.reload(); }
+        else toast(r.error || 'Error', 'error');
     }
 });
 
-// Enter en input de marcador
-$('#bm-url')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') $('#btn-save-marcador')?.click();
-});
-
-// ── Guardar carpeta ─────────────────────────────────────────
-$('#btn-save-carpeta')?.addEventListener('click', async () => {
-    const nombre = $('#folder-nombre').value.trim();
-    if (!nombre) { showToast('El nombre es requerido', 'error'); return; }
-
-    const btn = $('#btn-save-carpeta');
-    btn.disabled = true;
-
-    try {
-        const r = await apiPost('/marcadores/carpeta/crear/', { nombre });
-        if (r.ok) {
-            showToast('Carpeta creada');
-            closeModal('modal-carpeta');
-            location.reload();
-        } else {
-            showToast(r.error || 'Error al crear', 'error');
-        }
-    } catch {
-        showToast('Error de red', 'error');
-    } finally {
-        btn.disabled = false;
-    }
-});
-
-$('#folder-nombre')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') $('#btn-save-carpeta')?.click();
-});
-
-// ── Eliminar ────────────────────────────────────────────────
+/* ── Eliminar (delegado) ─────────────────────────────────── */
 document.addEventListener('click', async e => {
-    // Eliminar marcador
-    const delBm = e.target.closest('[data-del-bm]');
+    const delBm     = e.target.closest('[data-del-bm]');
+    const delFolder = e.target.closest('[data-del-folder]');
+
     if (delBm) {
-        e.preventDefault();
-        e.stopPropagation();
         if (!confirm('¿Eliminar este marcador?')) return;
-        try {
-            const r = await apiPost(`/marcadores/${delBm.dataset.delBm}/eliminar/`, {});
-            if (r.ok) { showToast('Marcador eliminado'); location.reload(); }
-            else showToast(r.error || 'Error', 'error');
-        } catch { showToast('Error de red', 'error'); }
-        return;
+        const r = await post(`/marcadores/${delBm.dataset.delBm}/eliminar/`, {});
+        if (r.ok) { toast('Marcador eliminado'); location.reload(); }
+        else toast('Error al eliminar', 'error');
     }
 
-    // Eliminar carpeta
-    const delFolder = e.target.closest('[data-del-folder]');
     if (delFolder) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!confirm('¿Eliminar carpeta y todos sus marcadores?')) return;
-        try {
-            const r = await apiPost(`/marcadores/carpeta/${delFolder.dataset.delFolder}/eliminar/`, {});
-            if (r.ok) { showToast('Carpeta eliminada'); location.reload(); }
-            else showToast(r.error || 'Error', 'error');
-        } catch { showToast('Error de red', 'error'); }
+        if (!confirm('¿Eliminar esta carpeta y todos sus marcadores?')) return;
+        const r = await post(`/marcadores/carpeta/${delFolder.dataset.delFolder}/eliminar/`, {});
+        if (r.ok) { toast('Carpeta eliminada'); location.reload(); }
+        else toast('Error al eliminar', 'error');
     }
 });
 
-// ── Filtro sidebar ──────────────────────────────────────────
+/* ── Filtro por carpeta ──────────────────────────────────── */
 $$('.sidebar-item[data-folder]').forEach(item => {
     item.addEventListener('click', e => {
-        if (e.target.closest('[data-del-folder]')) return;
-
+        if (e.target.closest('.sidebar-item-action')) return;
         $$('.sidebar-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-
         const folder = item.dataset.folder;
         $$('.bm-section').forEach(s => {
             s.classList.toggle('is-hidden', folder !== 'all' && s.dataset.section !== folder);
@@ -218,33 +110,31 @@ $$('.sidebar-item[data-folder]').forEach(item => {
     });
 });
 
-// ── Toggle sidebar ──────────────────────────────────────────
-$('#sidebar-toggle')?.addEventListener('click', () => {
-    $('#sidebar')?.classList.toggle('is-collapsed');
-});
-
-// ── Búsqueda ────────────────────────────────────────────────
-$('#search-input')?.addEventListener('input', e => {
+/* ── Búsqueda ────────────────────────────────────────────── */
+$('#search-input').addEventListener('input', e => {
     const q = e.target.value.toLowerCase().trim();
     let any = false;
 
     $$('.bm-card').forEach(card => {
-        const title = card.dataset.title || '';
-        const match = !q || title.includes(q);
+        const titulo = card.querySelector('.bm-title');
+        const match  = !q || (titulo && titulo.textContent.toLowerCase().includes(q));
         card.classList.toggle('is-hidden', !match);
         if (match) any = true;
     });
 
-    // Ocultar secciones vacías durante búsqueda
-    $$('.bm-section').forEach(s => {
-        if (!q) {
-            s.classList.remove('is-hidden');
-            return;
-        }
-        const visible = s.querySelectorAll('.bm-card:not(.is-hidden)').length > 0;
-        s.classList.toggle('is-hidden', !visible);
-    });
+    $('#no-results').style.display = (q && !any) ? 'flex' : 'none';
 
-    const noResults = $('#no-results');
-    if (noResults) noResults.style.display = (q && !any) ? 'flex' : 'none';
+    // Ocultar secciones vacías al buscar
+    $$('.bm-section').forEach(s => {
+        const visible = [...s.querySelectorAll('.bm-card')].some(c => !c.classList.contains('is-hidden'));
+        s.classList.toggle('is-hidden', q && !visible);
+    });
+});
+
+/* ── Atajo de teclado: ⌘K / Ctrl+K ──────────────────────── */
+document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        $('#search-input').focus();
+    }
 });
