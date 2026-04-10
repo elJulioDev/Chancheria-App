@@ -19,8 +19,8 @@ body {
     height: var(--header-h);
     background: var(--topbar-bg);
     border-bottom: 1px solid var(--topbar-border);
-    backdrop-filter: var(--topbar-blur);
     -webkit-backdrop-filter: var(--topbar-blur);
+    backdrop-filter: var(--topbar-blur);
     z-index: 200;
 }
 

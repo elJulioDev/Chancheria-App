@@ -62,6 +62,7 @@
     width: 22px;
     height: 22px;
     border-radius: var(--r-sm);
+    -webkit-backdrop-filter: none;
     backdrop-filter: blur(4px);
 }
 
