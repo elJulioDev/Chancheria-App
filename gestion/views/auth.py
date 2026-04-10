@@ -16,7 +16,7 @@ def login_view(request):
         if user is not None:
             if user.is_staff or user.is_superuser:
                 login(request, user)
-                return redirect('gestion:index')
+                return redirect('gestion:marcadores')
             else:
                 messages.error(request, 'No tienes permisos para acceder.')
         else:

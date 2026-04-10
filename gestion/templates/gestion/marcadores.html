@@ -1,0 +1,96 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marcadores</title>
+<link rel="stylesheet" href="{% static 'css/theme.css' %}">
+<link rel="stylesheet" href="{% static 'css/marcadores.css' %}">
+</head>
+<body>
+
+<header id="topbar">
+    <h1>Mar<span>cadores</span></h1>
+    <input type="text" id="search-input" placeholder="Buscar marcador...">
+    <button id="add-btn" type="button">+ Añadir</button>
+    <a href="{% url 'gestion:logout' %}" class="btn btn-ghost btn-sm" style="margin-left:8px">Salir</a>
+</header>
+
+<div id="layout">
+    <aside id="sidebar">
+        <div class="sidebar-label">Carpetas</div>
+        <div class="sidebar-item active" data-folder="all">
+            <span class="si-name">Todos</span>
+            <span class="count">{{ total }}</span>
+        </div>
+        {% for c in carpetas %}
+        <div class="sidebar-item" data-folder="{{ c.id }}">
+            <span class="si-name">{{ c.nombre }}</span>
+            <span class="count">{{ c.total }}</span>
+            <button class="delete-folder-btn" data-del-folder="{{ c.id }}" title="Eliminar">✕</button>
+        </div>
+        {% endfor %}
+    </aside>
+
+    <main id="main">
+        {% for c in carpetas %}
+        <section class="category-section" data-section="{{ c.id }}">
+            <div class="section-header">
+                <div class="section-title">{{ c.nombre }}</div>
+                <div class="section-count">{{ c.total }}</div>
+            </div>
+            <div class="bookmarks-grid">
+                {% for m in c.marcadores.all %}
+                <a href="{{ m.url }}" target="_blank" rel="noopener" class="bookmark-card" data-id="{{ m.id }}" data-folder="{{ c.id }}">
+                    <img src="{{ m.icono }}" class="bookmark-icon" alt="">
+                    <span class="bookmark-title">{{ m.titulo }}</span>
+                    <button class="delete-bookmark-btn" data-del-bm="{{ m.id }}">✕</button>
+                </a>
+                {% empty %}
+                <div class="empty-state">Sin marcadores</div>
+                {% endfor %}
+            </div>
+        </section>
+        {% empty %}
+        <div class="empty-state">Aún no tienes carpetas. Crea una con "+ Añadir".</div>
+        {% endfor %}
+        <div id="no-results"><div class="nr-icon">∅</div><p>Sin resultados</p></div>
+    </main>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+    <div id="modal">
+        <div id="modal-tabs">
+            <button class="modal-tab active" data-tab="bm">Marcador</button>
+            <button class="modal-tab" data-tab="folder">Carpeta</button>
+        </div>
+
+        <div class="tab-content active" data-content="bm">
+            <div class="form-group"><label>Título</label><input type="text" id="bm-titulo"></div>
+            <div class="form-group"><label>URL</label><input type="url" id="bm-url" placeholder="https://..."></div>
+            <div class="form-group"><label>Carpeta</label>
+                <select id="bm-carpeta">
+                    {% for c in carpetas %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="tab-content" data-content="folder">
+            <div class="form-group"><label>Nombre carpeta</label><input type="text" id="folder-nombre"></div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" id="modal-cancel">Cancelar</button>
+            <button class="btn-save" id="modal-save">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+{% csrf_token %}
+<script src="{% static 'script/marcadores.js' %}"></script>
+</body>
+</html>
