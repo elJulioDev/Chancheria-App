@@ -72,6 +72,16 @@ body {
     margin: 0 4px;
 }
 
+/* Botón hamburguesa: solo visible en móvil */
+.sidebar-toggle-btn {
+    display: none;
+}
+
+/* Botón búsqueda móvil: oculto en desktop */
+.mobile-search-btn {
+    display: none;
+}
+
 /* Botón seleccionar: estado activo */
 #select-mode-btn.is-active {
     background: var(--blue-subtle);
@@ -130,6 +140,68 @@ body {
     padding: 1px 5px;
     pointer-events: none;
     font-family: var(--font-sans);
+}
+
+/* ── Barra de búsqueda móvil ─────────────────────────────── */
+.mobile-search-bar {
+    display: none;
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    background: var(--topbar-bg);
+    border-bottom: 1px solid var(--topbar-border);
+    -webkit-backdrop-filter: var(--topbar-blur);
+    backdrop-filter: var(--topbar-blur);
+    z-index: 199;
+    padding: 8px 12px;
+    transform: translateY(-100%);
+    transition: transform var(--t-normal);
+    /* Cuenta el header para el desplazamiento */
+}
+
+.mobile-search-bar.is-open {
+    transform: translateY(0);
+}
+
+.mobile-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    padding: 6px 10px;
+}
+
+.mobile-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.mobile-search-input::placeholder { color: var(--text-subtle); }
+
+/* ── Overlay del sidebar (solo móvil) ────────────────────── */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(1, 4, 9, 0.6);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity var(--t-normal);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* ── App layout ──────────────────────────────────────────── */
@@ -652,21 +724,139 @@ body.select-mode .bm-card:not(.is-selected):hover {
     to { opacity: 0; transform: translateX(12px); }
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL
+   ═══════════════════════════════════════════════════════════ */
+
 @media (max-width: 768px) {
-    .sidebar { position: fixed; top: var(--header-h); bottom: 0; left: 0; z-index: 100; }
-    .sidebar.is-collapsed { transform: translateX(-100%); width: var(--sidebar-w); opacity: 1; }
-    .main-content { padding: 16px; }
-    .bm-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-    .topbar-center { max-width: 200px; }
-    .topbar-right .btn span { display: none; }
-    .bulk-bar { bottom: 16px; left: 16px; right: 16px; transform: translateY(80px); border-radius: var(--r-lg); flex-wrap: wrap; }
-    .bulk-bar.is-visible { transform: translateY(0); }
+    /* ── Topbar móvil ── */
+    .sidebar-toggle-btn { display: flex; }
+    .mobile-search-btn  { display: flex; }
+    .mobile-search-bar  { display: block; }
+    .topbar-center      { display: none; }
+    .topbar-right .btn span:not(.logout-label) { display: none; }
+    .logout-label { display: none; }
+    .topbar-divider { display: none; }
+
+    /* ── Sidebar: drawer sobre el contenido ── */
+    .sidebar {
+        position: fixed;
+        top: var(--header-h);
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+        transform: translateX(0);
+        transition: transform var(--t-normal), box-shadow var(--t-normal);
+        box-shadow: none;
+        width: 260px;
+        opacity: 1;
+        overflow-y: auto;
+    }
+
+    .sidebar.is-collapsed {
+        transform: translateX(-100%);
+        width: 260px; /* mantenemos width para la animación */
+        opacity: 1;
+        box-shadow: none;
+    }
+
+    .sidebar:not(.is-collapsed) {
+        box-shadow: var(--shadow-xl);
+    }
+
+    /* ── Overlay activo ── */
+    .sidebar-overlay {
+        display: block;
+        pointer-events: none;
+    }
+
+    .sidebar-overlay.is-visible {
+        pointer-events: auto;
+    }
+
+    /* ── Layout: sin sidebar en el flujo ── */
+    .app-layout {
+        /* El sidebar es fixed, el main ocupa todo el ancho */
+    }
+
+    .main-content {
+        padding: 14px 12px;
+        width: 100%;
+    }
+
+    /* ── Grid móvil: 2 columnas compactas ── */
+    .bm-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    /* ── Cards móvil: botones de acción siempre visibles ── */
+    .bm-actions {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* ── Bulk bar móvil ── */
+    .bulk-bar {
+        bottom: 16px;
+        left: 10px;
+        right: 10px;
+        transform: translateY(120px);
+        border-radius: var(--r-lg);
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .bulk-bar.is-visible {
+        transform: translateY(0);
+    }
+
+    .bulk-bar-actions {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    /* ── Toasts a la izquierda en móvil ── */
+    .toast-container {
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+    }
+
+    .toast {
+        width: 100%;
+        white-space: normal;
+    }
 }
 
 @media (max-width: 480px) {
     .topbar-brand span { display: none; }
-    .topbar-center { display: none; }
+
+    /* Grid: 2 columnas en pantallas muy pequeñas */
+    .bm-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .bm-section-header {
+        margin-bottom: 8px;
+    }
+
+    .main-content {
+        padding: 12px 10px;
+    }
+
+    /* Modales full-width en mobile pequeño */
+    .modal-backdrop {
+        padding: 12px;
+        align-items: flex-end;
+    }
+
+    .modal, .modal.modal-sm {
+        max-width: 100%;
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        max-height: 90vh;
+    }
 }
 
 /* ── Hidden utility ──────────────────────────────────────── */

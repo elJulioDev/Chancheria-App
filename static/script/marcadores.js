@@ -41,6 +41,123 @@ function bindClose(backdropId, ...btnIds) {
     bd.addEventListener('click', e => { if (e.target === bd) closeBackdrop(backdropId); });
 }
 
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR TOGGLE (móvil)
+   ══════════════════════════════════════════════════════════ */
+const sidebar        = $('#sidebar');
+const sidebarOverlay = $('#sidebar-overlay');
+const sidebarToggle  = $('#sidebar-toggle');
+
+function isMobile() { return window.innerWidth <= 768; }
+
+function openSidebar() {
+    sidebar.classList.remove('is-collapsed');
+    sidebarOverlay.classList.add('is-visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+    sidebar.classList.add('is-collapsed');
+    sidebarOverlay.classList.remove('is-visible');
+    document.body.style.overflow = '';
+}
+
+function toggleSidebar() {
+    if (sidebar.classList.contains('is-collapsed')) {
+        openSidebar();
+    } else {
+        closeSidebar();
+    }
+}
+
+// Inicializar: en móvil el sidebar empieza cerrado
+function initSidebarState() {
+    if (isMobile()) {
+        sidebar.classList.add('is-collapsed');
+    } else {
+        sidebar.classList.remove('is-collapsed');
+        sidebarOverlay.classList.remove('is-visible');
+        document.body.style.overflow = '';
+    }
+}
+
+sidebarToggle.addEventListener('click', toggleSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
+
+// Cierra sidebar al cambiar tamaño de pantalla
+window.addEventListener('resize', initSidebarState);
+initSidebarState();
+
+/* ══════════════════════════════════════════════════════════
+   BÚSQUEDA MÓVIL
+   ══════════════════════════════════════════════════════════ */
+const mobileSearchBtn   = $('#mobile-search-btn');
+const mobileSearchBar   = $('#mobile-search-bar');
+const mobileSearchInput = $('#mobile-search-input');
+const mobileSearchClose = $('#mobile-search-close');
+
+function openMobileSearch() {
+    mobileSearchBar.classList.add('is-open');
+    setTimeout(() => mobileSearchInput.focus(), 120);
+}
+
+function closeMobileSearch() {
+    mobileSearchBar.classList.remove('is-open');
+    mobileSearchInput.value = '';
+    // Limpiar filtro al cerrar
+    triggerSearch('');
+}
+
+mobileSearchBtn.addEventListener('click', openMobileSearch);
+mobileSearchClose.addEventListener('click', closeMobileSearch);
+
+// Sincroniza búsqueda móvil con la lógica de filtrado
+mobileSearchInput.addEventListener('input', e => {
+    triggerSearch(e.target.value);
+});
+
+/* ── Filtro por carpeta ──────────────────────────────────── */
+$$('.sidebar-item[data-folder]').forEach(item => {
+    item.addEventListener('click', e => {
+        if (e.target.closest('.sidebar-item-action')) return;
+        $$('.sidebar-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const folder = item.dataset.folder;
+        $$('.bm-section').forEach(s => {
+            s.classList.toggle('is-hidden', folder !== 'all' && s.dataset.section !== folder);
+        });
+
+        // En móvil: cierra el sidebar al seleccionar carpeta
+        if (isMobile()) closeSidebar();
+    });
+});
+
+/* ── Búsqueda (función central) ─────────────────────────── */
+function triggerSearch(q) {
+    const query = q.toLowerCase().trim();
+    let any = false;
+
+    $$('.bm-card').forEach(card => {
+        const titulo = card.querySelector('.bm-title');
+        const match  = !query || (titulo && titulo.textContent.toLowerCase().includes(query));
+        card.classList.toggle('is-hidden', !match);
+        if (match) any = true;
+    });
+
+    $('#no-results').style.display = (query && !any) ? 'flex' : 'none';
+
+    $$('.bm-section').forEach(s => {
+        const visible = [...s.querySelectorAll('.bm-card')].some(c => !c.classList.contains('is-hidden'));
+        s.classList.toggle('is-hidden', query && !visible);
+    });
+}
+
+$('#search-input').addEventListener('input', e => {
+    triggerSearch(e.target.value);
+    // Sincroniza con búsqueda móvil
+    mobileSearchInput.value = e.target.value;
+});
+
 /* ── Modal Añadir ────────────────────────────────────────── */
 function openModal() { openBackdrop('modal-backdrop'); }
 function closeModal() {
@@ -230,39 +347,6 @@ document.addEventListener('click', async e => {
     }
 });
 
-/* ── Filtro por carpeta ──────────────────────────────────── */
-$$('.sidebar-item[data-folder]').forEach(item => {
-    item.addEventListener('click', e => {
-        if (e.target.closest('.sidebar-item-action')) return;
-        $$('.sidebar-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        const folder = item.dataset.folder;
-        $$('.bm-section').forEach(s => {
-            s.classList.toggle('is-hidden', folder !== 'all' && s.dataset.section !== folder);
-        });
-    });
-});
-
-/* ── Búsqueda ────────────────────────────────────────────── */
-$('#search-input').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase().trim();
-    let any = false;
-
-    $$('.bm-card').forEach(card => {
-        const titulo = card.querySelector('.bm-title');
-        const match  = !q || (titulo && titulo.textContent.toLowerCase().includes(q));
-        card.classList.toggle('is-hidden', !match);
-        if (match) any = true;
-    });
-
-    $('#no-results').style.display = (q && !any) ? 'flex' : 'none';
-
-    $$('.bm-section').forEach(s => {
-        const visible = [...s.querySelectorAll('.bm-card')].some(c => !c.classList.contains('is-hidden'));
-        s.classList.toggle('is-hidden', q && !visible);
-    });
-});
-
 /* ══════════════════════════════════════════════════════════
    MODO SELECCIÓN MÚLTIPLE
    ══════════════════════════════════════════════════════════ */
@@ -273,28 +357,22 @@ const bulkDeleteBtn = $('#bulk-delete-btn');
 const bulkCancelBtn = $('#bulk-cancel-btn');
 const bulkSelectAll = $('#bulk-select-all');
 
-// Agrega estas referencias junto a las otras de "bulk"
 const bulkMoveBtn    = $('#bulk-move-btn');
 const bulkMoveSelect = $('#bulk-move-select');
 
-// Vincula el cierre del modal a los botones correspondientes
 bindClose('bulk-move-backdrop', 'bulk-move-close', 'bulk-move-cancel');
 
-// Al hacer clic en "Mover" en la barra bulk
 bulkMoveBtn.addEventListener('click', () => {
     const selected = getSelectedCards();
     if (selected.length === 0) return;
-    
     $('#bulk-move-count').textContent = selected.length;
-    bulkMoveSelect.value = ''; // Resetea el select para evitar envíos por error
+    bulkMoveSelect.value = '';
     openBackdrop('bulk-move-backdrop');
 });
 
-// Confirmar el movimiento
 $('#bulk-move-confirm').addEventListener('click', async () => {
     const selected = getSelectedCards();
     const carpetaId = bulkMoveSelect.value;
-
     if (!carpetaId) return toast('Selecciona una carpeta destino', 'error');
 
     const btn = $('#bulk-move-confirm');
@@ -302,23 +380,15 @@ $('#bulk-move-confirm').addEventListener('click', async () => {
     btn.textContent = 'Moviendo…';
 
     let ok = 0, fail = 0;
-    
-    // Aprovechamos tu endpoint existente para mover iterando la selección
     for (const card of selected) {
         try {
             const r = await post(`/marcadores/${card.dataset.id}/mover/`, { carpeta: carpetaId });
             r.ok ? ok++ : fail++;
-        } catch { 
-            fail++; 
-        }
+        } catch { fail++; }
     }
 
-    if (fail === 0) {
-        toast(`${ok} marcador(es) movido(s)`, 'success');
-    } else {
-        toast(`${ok} movidos, ${fail} con error`, 'error');
-    }
-
+    if (fail === 0) toast(`${ok} marcador(es) movido(s)`, 'success');
+    else toast(`${ok} movidos, ${fail} con error`, 'error');
     location.reload();
 });
 
@@ -407,11 +477,19 @@ bulkDeleteBtn.addEventListener('click', async () => {
 document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        $('#search-input').focus();
+        if (isMobile()) {
+            openMobileSearch();
+        } else {
+            $('#search-input').focus();
+        }
     }
     if (e.key === 'Escape') {
         if (selectMode) {
             exitSelectMode();
+        } else if (mobileSearchBar.classList.contains('is-open')) {
+            closeMobileSearch();
+        } else if (isMobile() && !sidebar.classList.contains('is-collapsed')) {
+            closeSidebar();
         } else {
             closeModal();
             closeEditModal();
