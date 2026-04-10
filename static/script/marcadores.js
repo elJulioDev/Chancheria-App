@@ -108,8 +108,11 @@ $('#edit-save').addEventListener('click', async () => {
     else toast(r.error || 'Error al guardar', 'error');
 });
 
-/* ── Delegado: editar + eliminar ─────────────────────────── */
+/* ── Delegado: editar + eliminar (modo normal) ───────────── */
 document.addEventListener('click', async e => {
+    // Ignorar en modo selección
+    if (document.body.classList.contains('select-mode')) return;
+
     /* ── Editar ── */
     const editBtn = e.target.closest('[data-edit-bm]');
     if (editBtn) {
@@ -177,14 +180,136 @@ $('#search-input').addEventListener('input', e => {
     });
 });
 
-/* ── Atajo de teclado: ⌘K / Ctrl+K ──────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   MODO SELECCIÓN MÚLTIPLE
+   ══════════════════════════════════════════════════════════ */
+const selectModeBtn = $('#select-mode-btn');
+const bulkBar       = $('#bulk-bar');
+const bulkCount     = $('#bulk-count');
+const bulkDeleteBtn = $('#bulk-delete-btn');
+const bulkCancelBtn = $('#bulk-cancel-btn');
+const bulkSelectAll = $('#bulk-select-all');
+
+let selectMode = false;
+
+function getSelectedCards() {
+    return [...$$('.bm-card.is-selected')];
+}
+
+function getVisibleCards() {
+    return [...$$('.bm-card:not(.is-hidden)')];
+}
+
+function updateBulkBar() {
+    const selected = getSelectedCards();
+    const count = selected.length;
+    bulkCount.textContent = count === 1 ? '1 seleccionado' : `${count} seleccionados`;
+    bulkBar.classList.toggle('is-visible', count > 0);
+
+    // Texto del botón "seleccionar todo"
+    const visible = getVisibleCards();
+    const allSelected = visible.length > 0 && visible.every(c => c.classList.contains('is-selected'));
+    bulkSelectAll.querySelector('span') && (bulkSelectAll.querySelector('span').textContent = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo');
+    // Para el caso sin span, actualizar el title
+    bulkSelectAll.title = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo';
+}
+
+function enterSelectMode() {
+    selectMode = true;
+    document.body.classList.add('select-mode');
+    selectModeBtn.classList.add('is-active');
+    selectModeBtn.title = 'Salir de selección';
+}
+
+function exitSelectMode() {
+    selectMode = false;
+    document.body.classList.remove('select-mode');
+    selectModeBtn.classList.remove('is-active');
+    selectModeBtn.title = 'Selección múltiple';
+    // Deseleccionar todo
+    $$('.bm-card.is-selected').forEach(c => c.classList.remove('is-selected'));
+    bulkBar.classList.remove('is-visible');
+}
+
+// Toggle modo selección
+selectModeBtn.addEventListener('click', () => {
+    selectMode ? exitSelectMode() : enterSelectMode();
+});
+
+// Click en card durante modo selección
+document.addEventListener('click', e => {
+    if (!selectMode) return;
+    const card = e.target.closest('.bm-card');
+    if (!card) return;
+    e.preventDefault();
+    e.stopPropagation();
+    card.classList.toggle('is-selected');
+    updateBulkBar();
+});
+
+// Seleccionar todo / deseleccionar todo
+bulkSelectAll.addEventListener('click', () => {
+    const visible = getVisibleCards();
+    const allSelected = visible.every(c => c.classList.contains('is-selected'));
+    visible.forEach(c => c.classList.toggle('is-selected', !allSelected));
+    updateBulkBar();
+});
+
+// Cancelar selección
+bulkCancelBtn.addEventListener('click', exitSelectMode);
+
+// Eliminar selección
+bulkDeleteBtn.addEventListener('click', async () => {
+    const selected = getSelectedCards();
+    if (selected.length === 0) return;
+
+    const plural = selected.length === 1 ? 'este marcador' : `estos ${selected.length} marcadores`;
+    if (!confirm(`¿Eliminar ${plural}?`)) return;
+
+    bulkDeleteBtn.disabled = true;
+    bulkDeleteBtn.textContent = 'Eliminando…';
+
+    let ok = 0;
+    let fail = 0;
+
+    for (const card of selected) {
+        const id = card.dataset.id;
+        try {
+            const r = await post(`/marcadores/${id}/eliminar/`, {});
+            if (r.ok) ok++;
+            else fail++;
+        } catch {
+            fail++;
+        }
+    }
+
+    if (fail === 0) {
+        toast(`${ok} marcador${ok !== 1 ? 'es' : ''} eliminado${ok !== 1 ? 's' : ''}`, 'success');
+    } else {
+        toast(`${ok} eliminados, ${fail} con error`, 'error');
+    }
+
+    location.reload();
+});
+
+/* ── Atajo de teclado: ⌘K / Ctrl+K / Escape ─────────────── */
 document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         $('#search-input').focus();
     }
     if (e.key === 'Escape') {
-        closeModal();
-        closeEditModal();
+        if (selectMode) {
+            exitSelectMode();
+        } else {
+            closeModal();
+            closeEditModal();
+        }
+    }
+    // Ctrl+A en modo selección = seleccionar todo
+    if (selectMode && (e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault();
+        getVisibleCards().forEach(c => c.classList.add('is-selected'));
+        updateBulkBar();
     }
 });

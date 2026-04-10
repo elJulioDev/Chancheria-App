@@ -72,6 +72,13 @@ body {
     margin: 0 4px;
 }
 
+/* Botón seleccionar: estado activo */
+#select-mode-btn.is-active {
+    background: var(--blue-subtle);
+    border-color: var(--blue-border);
+    color: var(--blue);
+}
+
 /* ── Search ──────────────────────────────────────────────── */
 .search-wrapper {
     position: relative;
@@ -268,7 +275,7 @@ body {
     gap: 6px;
 }
 
-/* ── Bookmark card ───────────────────────────────────────── */
+/* ── Bookmark card base ──────────────────────────────────── */
 .bm-card {
     display: flex;
     align-items: center;
@@ -280,7 +287,11 @@ body {
     text-decoration: none;
     color: var(--text-primary);
     font-size: 13px;
-    transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-normal), box-shadow var(--t-normal);
+    transition:
+        background var(--t-fast),
+        border-color var(--t-fast),
+        transform var(--t-normal),
+        box-shadow var(--t-normal);
     position: relative;
     overflow: hidden;
     min-width: 0;
@@ -315,19 +326,6 @@ body {
     object-fit: contain;
 }
 
-.bm-favicon-fallback {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    flex-shrink: 0;
-    background: var(--blue-emphasis);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    align-items: center;
-    justify-content: center;
-}
-
 .bm-title {
     flex: 1;
     overflow: hidden;
@@ -336,49 +334,201 @@ body {
     font-size: 13px;
 }
 
-/* ── Botón editar ─────────────────────────────────────────── */
-.bm-edit {
-    display: none;
+/* ══════════════════════════════════════════════════════════
+   Botones de acción — grupo pill
+   ══════════════════════════════════════════════════════════ */
+.bm-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    background: var(--surface-4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(0.88);
+    transition: opacity var(--t-fast), transform var(--t-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.bm-card:hover .bm-actions {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Separador vertical entre botones */
+.bm-actions-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--border-muted);
+    flex-shrink: 0;
+}
+
+/* Botón individual */
+.bm-action-btn {
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    background: var(--blue-subtle);
-    border: 1px solid var(--blue-border);
-    border-radius: var(--r-xs);
-    color: var(--blue);
+    width: 26px;
+    height: 24px;
+    background: transparent;
+    border: none;
     cursor: pointer;
     padding: 0;
-    flex-shrink: 0;
+    color: var(--text-muted);
     transition: background var(--t-fast), color var(--t-fast);
-    font-size: 0;
+    flex-shrink: 0;
     line-height: 1;
 }
 
-.bm-card:hover .bm-edit { display: flex; }
-.bm-edit:hover { background: var(--blue-emphasis); color: #fff; border-color: var(--blue-emphasis); }
+/* Editar: azul */
+.bm-action-btn.bm-edit:hover {
+    background: var(--blue-emphasis);
+    color: #fff;
+}
 
-/* ── Botón eliminar ───────────────────────────────────────── */
-.bm-delete {
+/* Eliminar: rojo */
+.bm-action-btn.bm-delete:hover {
+    background: var(--red-emphasis);
+    color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Modo selección múltiple
+   ══════════════════════════════════════════════════════════ */
+
+/* Checkbox flotante en cada card */
+.bm-check {
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: var(--r-xs);
+    border: 2px solid var(--border-strong);
+    background: var(--surface-3);
     display: none;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    background: var(--red-subtle);
-    border: 1px solid var(--red-border);
-    border-radius: var(--r-xs);
-    color: var(--red);
-    cursor: pointer;
-    padding: 0;
+    color: transparent;
     flex-shrink: 0;
-    transition: background var(--t-fast);
-    font-size: 0;
-    line-height: 1;
+    z-index: 2;
+    pointer-events: none;
+    transition:
+        background var(--t-fast),
+        border-color var(--t-fast),
+        color var(--t-fast),
+        transform var(--t-fast);
 }
 
-.bm-card:hover .bm-delete { display: flex; }
-.bm-delete:hover { background: var(--red-emphasis); color: #fff; }
+/* En modo selección se muestra el checkbox */
+body.select-mode .bm-check {
+    display: flex;
+}
+
+/* Ajuste de padding del card cuando aparece el checkbox */
+body.select-mode .bm-card {
+    padding-left: 32px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Card seleccionada */
+.bm-card.is-selected {
+    border-color: var(--blue-border) !important;
+    background: var(--blue-subtle) !important;
+    box-shadow: 0 0 0 1px var(--blue-border);
+}
+
+.bm-card.is-selected::before {
+    opacity: 1;
+}
+
+.bm-card.is-selected .bm-check {
+    background: var(--blue-emphasis);
+    border-color: var(--blue-emphasis);
+    color: #fff;
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Ocultar acciones en modo selección */
+body.select-mode .bm-actions {
+    display: none !important;
+}
+
+/* Sin hover elevado en modo selección (visualmente selecciona, no navega) */
+body.select-mode .bm-card:hover {
+    transform: none;
+    border-color: var(--border-default);
+}
+
+body.select-mode .bm-card:not(.is-selected):hover {
+    background: var(--surface-3);
+    border-color: var(--border-default);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Bulk action bar
+   ══════════════════════════════════════════════════════════ */
+.bulk-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-xl);
+    padding: 8px 8px 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow-xl), 0 0 0 1px rgba(56, 139, 253, 0.08);
+    transition: transform var(--t-spring), opacity var(--t-normal);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.bulk-bar.is-visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bulk-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-right: 4px;
+}
+
+.bulk-bar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 8px var(--blue-muted);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.bulk-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.bulk-bar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border-muted);
+    margin: 0 4px;
+}
 
 /* ── Empty states ────────────────────────────────────────── */
 .bm-empty {
@@ -408,26 +558,6 @@ body {
 /* ── Input with prefix ───────────────────────────────────── */
 .field-group { margin-bottom: 14px; }
 .field-group:last-child { margin-bottom: 0; }
-
-.input-with-prefix {
-    position: relative;
-    display: flex;
-}
-
-.input-prefix {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-subtle);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-}
-
-.input-prefixed {
-    padding-left: 30px;
-}
 
 /* ── Toast ───────────────────────────────────────────────── */
 .toast-container {
@@ -477,6 +607,8 @@ body {
     .bm-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
     .topbar-center { max-width: 200px; }
     .topbar-right .btn span { display: none; }
+    .bulk-bar { bottom: 16px; left: 16px; right: 16px; transform: translateY(80px); border-radius: var(--r-lg); flex-wrap: wrap; }
+    .bulk-bar.is-visible { transform: translateY(0); }
 }
 
 @media (max-width: 480px) {
