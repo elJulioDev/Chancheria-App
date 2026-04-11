@@ -395,7 +395,13 @@ $('#bulk-move-confirm').addEventListener('click', async () => {
 let selectMode = false;
 
 function getSelectedCards() { return [...$$('.bm-card.is-selected')]; }
-function getVisibleCards()  { return [...$$('.bm-card:not(.is-hidden)')]; }
+function getVisibleCards() {
+    return [...$$('.bm-card')].filter(card => {
+        const section = card.closest('.bm-section');
+        return !card.classList.contains('is-hidden')
+            && (!section || !section.classList.contains('is-hidden'));
+    });
+}
 
 function updateBulkBar() {
     const selected = getSelectedCards();
@@ -449,15 +455,21 @@ bulkSelectAll.addEventListener('click', () => {
 
 bulkCancelBtn.addEventListener('click', exitSelectMode);
 
-bulkDeleteBtn.addEventListener('click', async () => {
+bindClose('bulk-del-backdrop', 'bulk-del-close', 'bulk-del-cancel');
+
+bulkDeleteBtn.addEventListener('click', () => {
     const selected = getSelectedCards();
     if (selected.length === 0) return;
+    const plural = selected.length === 1 ? '1 marcador' : `${selected.length} marcadores`;
+    $('#bulk-del-count-text').textContent = plural;
+    openBackdrop('bulk-del-backdrop');
+});
 
-    const plural = selected.length === 1 ? 'este marcador' : `estos ${selected.length} marcadores`;
-    if (!confirm(`¿Eliminar ${plural}?`)) return;
-
-    bulkDeleteBtn.disabled = true;
-    bulkDeleteBtn.textContent = 'Eliminando…';
+$('#bulk-del-confirm').addEventListener('click', async () => {
+    const selected = getSelectedCards();
+    const btn = $('#bulk-del-confirm');
+    btn.disabled = true;
+    btn.querySelector('span') && (btn.querySelector('span').textContent = 'Eliminando…');
 
     let ok = 0, fail = 0;
     for (const card of selected) {
@@ -467,9 +479,9 @@ bulkDeleteBtn.addEventListener('click', async () => {
         } catch { fail++; }
     }
 
+    closeBackdrop('bulk-del-backdrop');
     if (fail === 0) toast(`${ok} marcador${ok !== 1 ? 'es' : ''} eliminado${ok !== 1 ? 's' : ''}`, 'success');
     else toast(`${ok} eliminados, ${fail} con error`, 'error');
-
     location.reload();
 });
 

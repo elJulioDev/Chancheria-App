@@ -852,12 +852,11 @@ body.select-mode .bm-card:not(.is-selected):hover {
     /* Modales full-width en mobile pequeño */
     .modal-backdrop {
         padding: 12px;
-        align-items: flex-end;
+        align-items: center;   /* centrado vertical */
     }
-
     .modal, .modal.modal-sm {
         max-width: 100%;
-        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        border-radius: var(--r-lg);  /* esquinas uniformes */
         max-height: 90vh;
     }
 }

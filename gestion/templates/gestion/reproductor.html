@@ -6,47 +6,49 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='white'/><circle cx='12' cy='12' r='8' fill='black'/></svg>">
     <title>Reproductor</title>
     <style>
-        /* Reseteo absoluto para evitar cualquier scroll */
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000;
-            overflow: hidden;
-        }
-        
-        #video-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    overflow: hidden;
+}
 
-        /* Botón flotante para volver atrás */
-        .btn-back {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.6);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            transition: background 0.2s, transform 0.2s;
-        }
+/* Iframe ocupa el viewport real, ignorando barras del browser */
+#video-iframe {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
 
-        .btn-back:hover {
-            background: rgba(248, 81, 73, 0.9);
-            transform: scale(1.05);
+.btn-back {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.btn-back:hover {
+    background: rgba(248, 81, 73, 0.9);
+    transform: scale(1.05);
+}
         }
     </style>
 </head>
