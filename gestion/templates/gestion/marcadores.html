@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'css/theme.css' %}">
 <link rel="stylesheet" href="{% static 'css/marcadores.css' %}">
 <link rel="stylesheet" href="{% static 'css/video-cards.css' %}">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='white'/><circle cx='12' cy='12' r='8' fill='black'/></svg>">
 </head>
 <body>
 
@@ -422,6 +423,19 @@
             <button class="btn btn-primary" id="bulk-move-confirm" type="button">Mover</button>
         </div>
     </div>
+</div>
+
+<div class="video-overlay" id="video-overlay">
+    <button class="video-close-btn" id="video-close-btn" title="Cerrar (Esc)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
+        </svg>
+    </button>
+    <iframe id="video-iframe"
+            allowfullscreen
+            allow="autoplay; fullscreen; picture-in-picture"
+            frameborder="0"
+            scrolling="no"></iframe>
 </div>
 
 <!-- ── Toasts ─────────────────────────────────────────────── -->

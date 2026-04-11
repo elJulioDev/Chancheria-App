@@ -16,4 +16,5 @@ urlpatterns = [
     path('marcadores/<int:pk>/eliminar/', views.eliminar_marcador, name='eliminar_marcador'),
     path('marcadores/<int:pk>/editar/', views.editar_marcador, name='editar_marcador'),
     path('marcadores/<int:pk>/mover/', views.mover_marcador, name='mover_marcador'),
+    path('video/<str:video_id>/', views.reproductor_view, name='reproductor'),
 ]

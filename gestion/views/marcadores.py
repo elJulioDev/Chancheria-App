@@ -135,3 +135,9 @@ def mover_marcador(request, pk):
     m.carpeta = carpeta
     m.save()
     return JsonResponse({'ok': True})
+
+@login_required(login_url='gestion:login')
+def reproductor_view(request, video_id):
+    return render(request, 'gestion/reproductor.html', {
+        'video_id': video_id
+    })

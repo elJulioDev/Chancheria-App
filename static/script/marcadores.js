@@ -504,3 +504,23 @@ document.addEventListener('keydown', e => {
         updateBulkBar();
     }
 });
+
+const EPORNER_RE = /eporner\.com\/(?:video|hd-porn|porn-video)[/-]([A-Za-z0-9]+)/i;
+
+// Interceptar clic en cards de video eporner
+document.addEventListener('click', e => {
+    // Ignorar en modo selección o si se hizo clic en acciones
+    if (document.body.classList.contains('select-mode')) return;
+    if (e.target.closest('.bm-action-btn')) return;
+
+    const card = e.target.closest('.bm-card.is-video');
+    if (!card) return;
+
+    const match = EPORNER_RE.exec(card.href);
+    if (!match) return; // no es eporner → deja que abra el enlace normal
+
+    e.preventDefault();
+    
+    // Redirigir a la nueva vista dedicada al reproductor
+    window.location.href = `/video/${match[1]}/`;
+}, true);
