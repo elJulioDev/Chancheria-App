@@ -515,6 +515,7 @@ body.select-mode .bm-check {
 body.select-mode .bm-card {
     padding-left: 32px;
     cursor: pointer;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -774,10 +775,12 @@ body.select-mode .bm-card:not(.is-selected):hover {
         pointer-events: auto;
     }
 
-    /* ── Layout: sin sidebar en el flujo ── */
+    /* 
+    ── Layout: sin sidebar en el flujo ──
     .app-layout {
-        /* El sidebar es fixed, el main ocupa todo el ancho */
+        El sidebar es fixed, el main ocupa todo el ancho
     }
+    */
 
     .main-content {
         padding: 14px 12px;
@@ -862,3 +865,13 @@ body.select-mode .bm-card:not(.is-selected):hover {
 /* ── Hidden utility ──────────────────────────────────────── */
 .bm-section.is-hidden { display: none; }
 .bm-card.is-hidden    { display: none; }
+
+/* Empujar todos los marcadores al final por defecto */
+.bm-card {
+    order: 1;
+}
+
+/* Traer todos los marcadores con clase de video/miniatura al frente */
+.bm-card.is-video {
+    order: 0;
+}

@@ -560,8 +560,8 @@ p { color: var(--text-secondary); }
 .textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
 
 .select {
-  appearance: none;
   -webkit-appearance: none;
+  appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='%239198a1'><path d='M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -779,8 +779,8 @@ p { color: var(--text-secondary); }
   position: fixed;
   inset: 0;
   background: rgba(1, 4, 9, 0.75);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;

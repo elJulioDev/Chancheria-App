@@ -5,17 +5,32 @@ from django.http import JsonResponse, QueryDict
 from django.views.decorators.http import require_POST, require_http_methods
 from django.db.models import Count
 from ..models import Carpeta, Marcador
+from django.db.models import Count, Prefetch, Case, When, Value, IntegerField, Q
 
 @login_required(login_url='gestion:login')
 def marcadores_view(request):
-    carpetas = Carpeta.objects.filter(usuario=request.user).annotate(total=Count('marcadores'))
-    marcadores = Marcador.objects.filter(usuario=request.user).select_related('carpeta')
+    # 1. Creamos un QuerySet que identifique si NO tiene miniatura real
+    # Le da un peso de "1" a los que usan favicon (o nada) y "0" a los de miniatura
+    marcadores_qs = Marcador.objects.filter(usuario=request.user).annotate(
+        sin_miniatura=Case(
+            When(Q(icono='') | Q(icono__contains='google.com/s2/favicons'), then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        )
+    ).order_by('sin_miniatura', 'orden', 'titulo')
+
+    # 2. Inyectamos este queryset a la consulta de las carpetas mediante prefetch_related
+    carpetas = Carpeta.objects.filter(usuario=request.user).annotate(
+        total=Count('marcadores')
+    ).prefetch_related(
+        Prefetch('marcadores', queryset=marcadores_qs)
+    )
+
     return render(request, 'gestion/marcadores.html', {
         'carpetas': carpetas,
-        'marcadores': marcadores,
-        'total': marcadores.count(),
+        'marcadores': marcadores_qs,
+        'total': marcadores_qs.count(),
     })
-
 
 @login_required(login_url='gestion:login')
 @require_POST
@@ -27,7 +42,6 @@ def crear_carpeta(request):
         return JsonResponse({'ok': False, 'error': 'Ya existe'}, status=400)
     c = Carpeta.objects.create(usuario=request.user, nombre=nombre)
     return JsonResponse({'ok': True, 'id': c.id, 'nombre': c.nombre})
-
 
 @login_required(login_url='gestion:login')
 @require_POST
@@ -41,7 +55,6 @@ def editar_carpeta(request, pk):
     c.nombre = nombre
     c.save()
     return JsonResponse({'ok': True, 'id': c.id, 'nombre': c.nombre})
-
 
 @login_required(login_url='gestion:login')
 @require_POST
@@ -57,7 +70,6 @@ def crear_marcador(request):
         'ok': True, 'id': m.id, 'titulo': m.titulo, 'url': m.url,
         'icono': m.icono, 'carpeta_id': carpeta.id,
     })
-
 
 @login_required(login_url='gestion:login')
 @require_http_methods(["POST", "PUT"])
@@ -100,7 +112,6 @@ def editar_marcador(request, pk):
         'icono': m.icono,
     })
 
-
 @login_required(login_url='gestion:login')
 @require_http_methods(["POST", "DELETE"])
 def eliminar_marcador(request, pk):
@@ -108,14 +119,12 @@ def eliminar_marcador(request, pk):
     m.delete()
     return JsonResponse({'ok': True})
 
-
 @login_required(login_url='gestion:login')
 @require_POST
 def eliminar_carpeta(request, pk):
     c = get_object_or_404(Carpeta, pk=pk, usuario=request.user)
     c.delete()
     return JsonResponse({'ok': True})
-
 
 @login_required(login_url='gestion:login')
 @require_POST
