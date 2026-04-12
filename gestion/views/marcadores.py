@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.db.models import Count
 from ..models import Carpeta, Marcador
 from django.db.models import Count, Prefetch, Case, When, Value, IntegerField, Q
+import base64
 
 @login_required(login_url='gestion:login')
 def marcadores_view(request):
@@ -138,6 +139,11 @@ def mover_marcador(request, pk):
 
 @login_required(login_url='gestion:login')
 def reproductor_view(request, video_id):
+    # aHR0cHM6Ly93d3cuZXBvcm5lci5jb20vZW1iZWQv -> decodifica a la URL del embed
+    base_embed = base64.b64decode('aHR0cHM6Ly93d3cuZXBvcm5lci5jb20vZW1iZWQv').decode('utf-8')
+    url_final = f"{base_embed}{video_id}/?autoplay=1"
+
     return render(request, 'gestion/reproductor.html', {
-        'video_id': video_id
+        'video_id': video_id,
+        'embed_url': url_final
     })

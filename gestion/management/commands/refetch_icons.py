@@ -2,7 +2,7 @@
 Uso:
     python manage.py refetch_icons              # solo marcadores sin icono
     python manage.py refetch_icons --all        # todos los marcadores
-    python manage.py refetch_icons --url https://www.eporner.com/video/XYZ/  # uno específico
+    python manage.py refetch_icons --url https://www.ejemplo.com/video/XYZ/  # uno específico
 """
 from django.core.management.base import BaseCommand
 from gestion.models import Marcador
