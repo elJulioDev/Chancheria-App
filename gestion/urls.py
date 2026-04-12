@@ -18,3 +18,9 @@ urlpatterns = [
     path('marcadores/<int:pk>/mover/', views.mover_marcador, name='mover_marcador'),
     path('video/<str:video_id>/', views.reproductor_view, name='reproductor'),
 ]
+
+from .views.video_browser import video_browser_view, video_search_proxy
+urlpatterns += [
+    path('videos/', video_browser_view, name='video_browser'),
+    path('api/videos/search/', video_search_proxy, name='video_search_proxy'),
+]
