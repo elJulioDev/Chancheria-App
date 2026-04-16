@@ -49,6 +49,69 @@ let totalPages    = 1;
 let debounceTimer = null;
 const PER_PAGE    = 24;
 
+// ══════════════════════════════════════════════════════════════
+// OPTIMIZACIÓN 1: Cache en memoria con TTL
+// ══════════════════════════════════════════════════════════════
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+const _cache = new Map();
+
+function cacheKey(query, page, order) {
+    return `${query}|${page}|${order}`;
+}
+
+function cacheGet(query, page, order) {
+    const key = cacheKey(query, page, order);
+    const entry = _cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.ts > CACHE_TTL_MS) { _cache.delete(key); return null; }
+    return entry.data;
+}
+
+function cacheSet(query, page, order, data) {
+    // Limitar tamaño máximo del cache a 60 entradas
+    if (_cache.size >= 60) {
+        const oldest = _cache.keys().next().value;
+        _cache.delete(oldest);
+    }
+    _cache.set(cacheKey(query, page, order), { ts: Date.now(), data });
+}
+
+// ══════════════════════════════════════════════════════════════
+// OPTIMIZACIÓN 2: AbortController — cancela requests anteriores
+// ══════════════════════════════════════════════════════════════
+let _currentAbort = null;
+
+function abortPrevious() {
+    if (_currentAbort) { _currentAbort.abort(); _currentAbort = null; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// OPTIMIZACIÓN 3: Debounce al togglear categorías
+// ══════════════════════════════════════════════════════════════
+let _catDebounce = null;
+
+function scheduleSearch() {
+    clearTimeout(_catDebounce);
+    _catDebounce = setTimeout(runSearch, 300);
+}
+
+// ── Prefetch próxima página (silencioso) ──────────────────────
+function prefetchNextPage(query, page, order) {
+    const next = page + 1;
+    if (next > totalPages) return;
+    if (cacheGet(query, next, order)) return; // ya está cacheado
+
+    // Lanzar sin esperar, sin mostrar spinner, sin actualizar UI
+    setTimeout(async () => {
+        try {
+            const params = new URLSearchParams({ q: query, page: next, per_page: PER_PAGE, order });
+            const res  = await fetch(`${VB_CONFIG.searchUrl}?${params}`);
+            const data = await res.json();
+            if (data.ok) cacheSet(query, next, order, data);
+        } catch { /* silencioso */ }
+    }, 800); // espera 800ms para no solapar con el request activo
+}
+
 const ICON_PLUS  = `<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2z"/></svg>`;
 const ICON_CHECK = `<svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>`;
 
@@ -136,14 +199,21 @@ activePills.addEventListener('click', e => {
     if (!btn) return;
     activeTags.delete(btn.dataset.remove);
     renderActiveTags();
-    runSearch();
+    scheduleSearch(); // ← debounced
 });
 
-const clearAll = () => { activeTags.clear(); renderActiveTags(); setView('empty'); emptyState.querySelector('p').textContent = 'Selecciona una categoría del menú'; };
+const clearAll = () => {
+    clearTimeout(_catDebounce);
+    abortPrevious();
+    activeTags.clear();
+    renderActiveTags();
+    setView('empty');
+    emptyState.querySelector('p').textContent = 'Selecciona una categoría del menú';
+};
 clearAllBtn.addEventListener('click', clearAll);
 sidebarClearBtn.addEventListener('click', clearAll);
 
-// ── Click en categoría ────────────────────────────────────────
+// ── Click en categoría (ahora con debounce) ───────────────────
 document.addEventListener('click', e => {
     const item = e.target.closest('.vb-cat-item');
     if (!item) return;
@@ -153,7 +223,7 @@ document.addEventListener('click', e => {
     searchInput.value = '';
     clearBtn.style.display = 'none';
     currentQuery = '';
-    runSearch();
+    scheduleSearch(); // ← debounced: espera 300ms antes de disparar
     if (isMobile()) closeSidebar();
 });
 
@@ -175,7 +245,7 @@ searchInput.addEventListener('input', () => {
         if (val) fetchVideos(val, 1);
         else if (activeTags.size > 0) runSearch();
         else setView('empty');
-    }, 420);
+    }, 500); // ligeramente aumentado de 420 a 500ms
 });
 
 clearBtn.addEventListener('click', () => {
@@ -198,24 +268,57 @@ function runSearch() {
     else setView('empty');
 }
 
-// ── Fetch videos ──────────────────────────────────────────────
+// ── Fetch videos (con cache + AbortController) ────────────────
 async function fetchVideos(query, page = 1) {
     if (!query.trim()) { setView('empty'); return; }
+
+    const order = sortSelect.value;
+
+    // ── Hit de cache: sin request ─────────────────────────────
+    const cached = cacheGet(query, page, order);
+    if (cached) {
+        currentPage = page;
+        totalPages = cached.pages || 1;
+        renderGrid(cached.videos || []);
+        renderPagination(page, cached.count);
+        if (page > 1) $('vb-main').scrollTop = 0;
+        prefetchNextPage(query, page, order);
+        return;
+    }
+
+    // ── Request real ──────────────────────────────────────────
+    abortPrevious();
+    _currentAbort = new AbortController();
+    const signal = _currentAbort.signal;
+
     setView('spinner');
     currentPage = page;
     if (page > 1) $('vb-main').scrollTop = 0;
 
     try {
-        const params = new URLSearchParams({ q: query, page, per_page: PER_PAGE, order: sortSelect.value });
-        const res  = await fetch(`${VB_CONFIG.searchUrl}?${params}`);
+        const params = new URLSearchParams({ q: query, page, per_page: PER_PAGE, order });
+        const res  = await fetch(`${VB_CONFIG.searchUrl}?${params}`, { signal });
         const data = await res.json();
+
         if (!data.ok) throw new Error(data.error || 'Error');
+
         totalPages = data.pages || Math.ceil((data.total || 0) / PER_PAGE) || 1;
+
+        // Guardar en cache antes de renderizar
+        cacheSet(query, page, order, data);
+
         renderGrid(data.videos || []);
         renderPagination(page, data.count);
+
+        // Prefetch silencioso de página siguiente
+        prefetchNextPage(query, page, order);
+
     } catch (err) {
+        if (err.name === 'AbortError') return; // cancelado intencionalmente, ignorar
         errorMsg.textContent = err.message || 'Error al conectar';
         setView('error');
+    } finally {
+        _currentAbort = null;
     }
 }
 
