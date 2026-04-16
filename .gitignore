@@ -22,6 +22,4 @@ db.sqlite3
 /media/
 
 # Proveedores de iconos locales (integraciones privadas)
-gestion/icono_providers.py
-gestion/views/video_browser.py
 gestion/management/commands/seed_categorias.py
