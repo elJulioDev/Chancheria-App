@@ -18,7 +18,7 @@ def marcadores_view(request):
             default=Value(0),
             output_field=IntegerField()
         )
-    ).order_by('sin_miniatura', 'orden', 'titulo')
+    ).order_by('sin_miniatura', '-creado')
 
     # 2. Inyectamos este queryset a la consulta de las carpetas mediante prefetch_related
     carpetas = Carpeta.objects.filter(usuario=request.user).annotate(
