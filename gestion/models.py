@@ -50,3 +50,16 @@ class Marcador(models.Model):
             pass
 
         return f'https://www.google.com/s2/favicons?domain={dominio}&sz=64'
+    
+class CategoriaBrowser(models.Model):
+    nombre = models.CharField(max_length=80, help_text='Nombre visible en el sidebar')
+    tag    = models.CharField(max_length=80, help_text='Query enviado a la API del proveedor')
+    conteo = models.PositiveIntegerField(default=0, help_text='Cantidad referencial de videos')
+    orden  = models.PositiveIntegerField(default=0)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['orden', 'nombre']
+
+    def __str__(self):
+        return self.nombre

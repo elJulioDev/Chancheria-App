@@ -19,8 +19,9 @@ urlpatterns = [
     path('video/<str:video_id>/', views.reproductor_view, name='reproductor'),
 ]
 
-from .views.video_browser import video_browser_view, video_search_proxy
+from .views.video_browser import video_browser_view, video_search_proxy, categorias_proxy
 urlpatterns += [
     path('videos/', video_browser_view, name='video_browser'),
-    path('api/videos/search/', video_search_proxy, name='video_search_proxy'),
+    path('api/videos/search/',     video_search_proxy, name='video_search_proxy'),
+    path('api/videos/categorias/', categorias_proxy,   name='video_categorias'),
 ]
