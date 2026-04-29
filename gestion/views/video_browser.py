@@ -1,18 +1,14 @@
 import os
 import json
 import requests
+import re
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-
+from bs4 import BeautifulSoup
 from gestion.models import Carpeta, CategoriaBrowser
 
-# ── Configuración Segura ─────────────────────────────────────────
-# Obtenemos la URL base de forma segura desde las variables de entorno
-PROVEEDOR_API_URL = os.environ.get('PROVEEDOR_API_URL', '')
-_BASE  = f"{PROVEEDOR_API_URL}/api/v2"
-_THUMB = "big"
-_PER   = 24
+PROVEEDOR_URL_BASE = os.environ.get('PROVEEDOR_API_URL', 'https://dominio-secreto.com')
 
 _HEADERS = {
     "User-Agent": (
@@ -21,7 +17,6 @@ _HEADERS = {
         "Chrome/124.0.0.0 Safari/537.36"
     )
 }
-
 
 @login_required(login_url="gestion:login")
 def video_browser_view(request):
@@ -36,7 +31,6 @@ def video_browser_view(request):
 @login_required(login_url="gestion:login")
 def categorias_proxy(request):
     """
-    GET /api/videos/categorias/
     Devuelve la lista de categorías almacenadas en la BD.
     """
     cats = (
@@ -51,60 +45,104 @@ def categorias_proxy(request):
 @login_required(login_url="gestion:login")
 def video_search_proxy(request):
     """
-    GET /api/videos/search/?q=TAG&page=1&order=latest
+    Parsea la web oficial en lugar de la API para obtener los mismos resultados,
+    incluyendo los filtros de ordenamiento exactos.
     """
     query    = request.GET.get("q", "").strip()
     page     = request.GET.get("page", "1")
-    per_page = request.GET.get("per_page", str(_PER))
     order    = request.GET.get("order", "latest")
 
     if not query:
         return JsonResponse({"ok": False, "error": "q requerido"}, status=400)
-        
-    # Protección: Si la variable de entorno no está configurada, evitamos la petición mal formada
-    if not PROVEEDOR_API_URL:
-        return JsonResponse({"ok": False, "error": "API no configurada en el servidor"}, status=500)
 
     try:
-        r = requests.get(
-            f"{_BASE}/video/search/",
-            params={
-                "query":     query,
-                "per_page":  per_page,
-                "page":      page,
-                "thumbsize": _THUMB,
-                "format":    "json",
-                "order":     order,
-                "gay":       1,
-                "lq":        1,
-            },
-            headers=_HEADERS,
-            timeout=15,
-        )
-        r.raise_for_status()
-        data = r.json()
+        tokens = [t.strip() for t in re.split(r'[ ,]+', query) if t.strip()]
+        valid_tags = set(CategoriaBrowser.objects.values_list('tag', flat=True))
+        is_category_search = len(tokens) > 0 and all(t in valid_tags for t in tokens)
 
+        mapa_orden = {
+            "latest": "",
+            "top-weekly": "top-weekly",
+            "top-monthly": "top-monthly",
+            "most-viewed": "most-viewed",
+            "top-rated": "top-rated",
+            "longest": "longest",
+            "shortest": "shortest"
+        }
+        
+        order_slug = mapa_orden.get(order, "")
+
+        if is_category_search:
+            path = f"/cat/{'/'.join(tokens)}/"
+        else:
+            search_slug = "-".join(tokens)
+            path = f"/search/{search_slug}/"
+            
+        if order_slug:
+            path += f"{order_slug}/"
+            
+        if str(page) != "1":
+            path += f"{page}/"
+
+        url = f"{PROVEEDOR_URL_BASE}{path}"
+
+        r = requests.get(url, headers=_HEADERS, timeout=15)
+        r.raise_for_status()
+
+        soup = BeautifulSoup(r.text, 'html.parser')
         videos = []
-        for v in data.get("videos", []):
+        
+        for div in soup.find_all("div", class_="mb"):
+            a_tag = div.find("a")
+            if not a_tag: 
+                continue
+                
+            video_url = a_tag.get("href", "")
+            if video_url.startswith("/"):
+                video_url = f"{PROVEEDOR_URL_BASE}{video_url}"
+                
+            parts = [p for p in a_tag.get("href", "").split("/") if p]
+            vid_id = ""
+            if len(parts) >= 2 and parts[1].isdigit():
+                vid_id = parts[1]
+            else:
+                vid_id = div.get("id", "").replace("vid", "")
+                
+            if not vid_id: 
+                continue
+                
+            img_tag = div.find("img")
+            if not img_tag: 
+                continue
+                
+            title = img_tag.get("title") or img_tag.get("alt") or "Sin título"
+            thumb = img_tag.get("data-src") or img_tag.get("src") or ""
+            
+            tim_span = div.find("span", class_="mbtim")
+            duration = tim_span.text.strip() if tim_span else ""
+            
+            vi_span = div.find("span", class_="mbvi")
+            views = vi_span.text.strip() if vi_span else ""
+            
             videos.append({
-                "id":       v.get("id", ""),
-                "title":    v.get("title", ""),
-                "thumb":    v.get("default_thumb", {}).get("src", ""),
-                "duration": v.get("length_min", ""),
-                "views":    v.get("views", ""),
-                "url":      v.get("url", ""),
+                "id":       vid_id,
+                "title":    title.strip(),
+                "thumb":    thumb,
+                "duration": duration,
+                "views":    views,
+                "url":      video_url,
             })
 
         return JsonResponse({
             "ok":     True,
-            "total":  data.get("total_count", 0),
-            "pages":  data.get("total_pages", 1),
-            "count":  data.get("count", 0),
+            "total":  10000, 
+            "pages":  1000,  
+            "count":  len(videos),
             "page":   int(page),
             "videos": videos,
         })
 
     except requests.RequestException as e:
-        return JsonResponse({"ok": False, "error": str(e)}, status=502)
-    except Exception:
-        return JsonResponse({"ok": False, "error": "Error inesperado"}, status=500)
+        return JsonResponse({"ok": False, "error": f"Error de red: {str(e)}"}, status=502)
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": f"Error procesando HTML: {str(e)}"}, status=500)
