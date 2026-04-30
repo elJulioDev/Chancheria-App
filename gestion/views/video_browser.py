@@ -1,7 +1,7 @@
 import os
 import json
-import requests
 import re
+import cloudscraper
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -9,14 +9,6 @@ from bs4 import BeautifulSoup
 from gestion.models import Carpeta, CategoriaBrowser
 
 PROVEEDOR_URL_BASE = os.environ.get('PROVEEDOR_API_URL', 'https://dominio-secreto.com')
-
-_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    )
-}
 
 @login_required(login_url="gestion:login")
 def video_browser_view(request):
@@ -30,9 +22,6 @@ def video_browser_view(request):
 
 @login_required(login_url="gestion:login")
 def categorias_proxy(request):
-    """
-    Devuelve la lista de categorías almacenadas en la BD.
-    """
     cats = (
         CategoriaBrowser.objects
         .filter(activa=True)
@@ -45,8 +34,8 @@ def categorias_proxy(request):
 @login_required(login_url="gestion:login")
 def video_search_proxy(request):
     """
-    Parsea la web oficial en lugar de la API para obtener los mismos resultados,
-    incluyendo los filtros de ordenamiento exactos.
+    Parsea la web oficial utilizando Cloudscraper para evadir 
+    los bloqueos de Cloudflare en entornos Serverless (Vercel).
     """
     query    = request.GET.get("q", "").strip()
     page     = request.GET.get("page", "1")
@@ -86,7 +75,15 @@ def video_search_proxy(request):
 
         url = f"{PROVEEDOR_URL_BASE}{path}"
 
-        r = requests.get(url, headers=_HEADERS, timeout=15)
+        scraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'desktop': True
+            }
+        )
+        
+        r = scraper.get(url, timeout=15)
         r.raise_for_status()
 
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -142,7 +139,5 @@ def video_search_proxy(request):
             "videos": videos,
         })
 
-    except requests.RequestException as e:
-        return JsonResponse({"ok": False, "error": f"Error de red: {str(e)}"}, status=502)
     except Exception as e:
         return JsonResponse({"ok": False, "error": f"Error procesando HTML: {str(e)}"}, status=500)
